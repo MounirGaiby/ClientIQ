@@ -66,6 +66,7 @@ class TenantUser(AbstractUser):
     
     # Remove username field and fix reverse accessor conflicts
     username = None
+    
     groups = models.ManyToManyField(
         'auth.Group',
         related_name='tenant_users',
@@ -87,7 +88,7 @@ class TenantUser(AbstractUser):
         ordering = ['last_name', 'first_name']
     
     def __str__(self):
-        return f"{self.get_full_name()} ({self.email})"
+        return self.email
     
     def get_full_name(self):
         """Return the full name of the user."""
@@ -123,3 +124,8 @@ class TenantUser(AbstractUser):
         Check if user has a specific permission.
         """
         return permission_codename in self.get_permissions()
+
+
+# Add custom manager after class definition to avoid circular imports
+from .managers import UserManager
+TenantUser.add_to_class('objects', UserManager())
