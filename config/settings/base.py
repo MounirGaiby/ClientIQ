@@ -64,6 +64,7 @@ SHARED_APPS = [
     'apps.demo',
     'apps.common',
     'apps.users',  # User model needs to be in shared apps
+    'apps.permissions',  # Permissions are shared across tenants
 ]
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
