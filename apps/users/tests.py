@@ -233,7 +233,7 @@ class UserManagementServiceTest(TransactionTestCase):
         user_data = {
             'first_name': 'Admin',
             'last_name': 'User',
-            'email': 'admin@servicetest.com',
+            'email': 'unique_admin@servicetest.com',
             'job_title': 'Administrator',
             'department': 'Management'
         }
@@ -245,7 +245,7 @@ class UserManagementServiceTest(TransactionTestCase):
         self.assertIn('password', result)
         
         user = result['user']
-        self.assertEqual(user.email, 'admin@servicetest.com')
+        self.assertEqual(user.email, 'unique_admin@servicetest.com')
         self.assertTrue(user.is_tenant_admin)
         self.assertTrue(user.is_staff)
         self.assertEqual(user.user_type, 'admin')
@@ -254,7 +254,7 @@ class UserManagementServiceTest(TransactionTestCase):
         mock_assign_role.assert_called_once_with(user, self.tenant)
     
     def test_create_tenant_admin_user_duplicate_email(self):
-        """Test creating admin user with duplicate email."""
+        """Test creating admin user with duplicate email raises ValueError."""
         user_data = {
             'first_name': 'First',
             'last_name': 'User',
@@ -265,11 +265,11 @@ class UserManagementServiceTest(TransactionTestCase):
         with schema_context(self.tenant.schema_name):
             TenantUser.objects.create(**user_data)
         
-        # Try to create second user with same email
-        result = UserManagementService.create_tenant_admin_user(self.tenant, user_data)
+        # Try to create second user with same email should raise ValueError
+        with self.assertRaises(ValueError) as context:
+            UserManagementService.create_tenant_admin_user(self.tenant, user_data)
         
-        self.assertFalse(result['success'])
-        self.assertIn('already exists', result['message'])
+        self.assertIn('already exists', str(context.exception))
     
     @patch('apps.tenant_permissions.models.TenantRole.objects.get')
     @patch('apps.tenant_permissions.models.TenantUserRole.objects.create')
@@ -347,11 +347,15 @@ class UserPermissionTest(TransactionTestCase):
         # Create some permissions in public schema
         self.permission1 = Permission.objects.create(
             name='Test Permission 1',
-            description='First test permission'
+            codename='test_permission_1',
+            description='First test permission',
+            category='Test'
         )
         self.permission2 = Permission.objects.create(
             name='Test Permission 2',
-            description='Second test permission'
+            codename='test_permission_2',
+            description='Second test permission',
+            category='Test'
         )
     
     def test_user_permission_checking(self):
@@ -440,7 +444,8 @@ class UserAPITest(TestCase):
     
     def test_user_list_api(self):
         """Test listing users via API."""
-        self.client.force_login(self.user)
+        with schema_context(self.tenant.schema_name):
+            self.client.force_login(self.user)
         
         response = self.client.get('/api/users/')
         
@@ -452,7 +457,8 @@ class UserAPITest(TestCase):
     
     def test_user_profile_api(self):
         """Test user profile via API."""
-        self.client.force_login(self.user)
+        with schema_context(self.tenant.schema_name):
+            self.client.force_login(self.user)
         
         response = self.client.get('/api/users/profile/')
         
