@@ -192,3 +192,4 @@ webpack-stats.json
 # Local configuration
 local.py
 local_*.py
+.workspace/

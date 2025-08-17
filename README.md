@@ -1,8 +1,15 @@
 # ClientIQ 🚀
 
-**Modern Multi-Tenant SaaS Platform for Client Relationship Management**
+**Modern Full-Stack Multi-Tenant SaaS Platform**
 
-ClientIQ is a sophisticated Django-based platform designed for managing client relationships with enterprise-grade features including multi-tenancy, advanced permissions, and comprehensive API integration.
+ClientIQ is a sophisticated full-stack platform with Django backend and Next.js frontend, designed for managing client relationships with enterprise-grade features including multi-tenancy, advanced permissions, and modern React UI.
+
+## 🏗️ Monorepo Structure
+
+This repository contains both backend and frontend applications:
+
+- **Backend** (`/backend/`): Django 4.2.7 with PostgreSQL and multi-tenant architecture
+- **Frontend** (`/frontend/`): Next.js 14 with TypeScript, Tailwind CSS, and shadcn/ui
 
 ## ✨ Key Features
 
@@ -23,17 +30,26 @@ Get ClientIQ running in under 10 minutes:
 git clone https://github.com/your-org/clientiq.git
 cd clientiq
 
-# Start with Docker
-docker-compose up -d
-
-# Or run locally
+# Backend Setup
+cd backend
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py seed_db  # Optional: Add sample data
-python manage.py runserver
+python manage.py runserver &  # Runs on :8000
+
+# Frontend Setup (in new terminal)
+cd ../frontend
+npm install
+npm run dev  # Runs on :3000
+
+# Or use Docker for everything
+docker-compose up -d
 ```
 
-**🎯 Ready to go!** Visit `http://localhost:8000` to access your ClientIQ instance.
+**🎯 Ready to go!** 
+- Frontend: `http://localhost:3000` (Next.js landing page)
+- Backend API: `http://localhost:8000/api/` (Django REST API)
+- Admin: `http://localhost:8000/admin/` (Django admin interface)
 
 ## 📚 Documentation
 
@@ -61,19 +77,29 @@ python manage.py runserver
 
 ## 🏗️ Project Structure
 
-```
+```bash
 clientiq/
-├── apps/                    # Django applications
-│   ├── authentication/     # Auth system
-│   ├── users/              # User management
-│   ├── tenants/            # Multi-tenancy
-│   ├── permissions/        # RBAC system
-│   ├── subscriptions/      # Billing & subscriptions
-│   └── translations/       # i18n support
-├── config/                 # Django configuration
-├── docs/                   # 📚 Complete documentation
-├── requirements.txt        # Python dependencies
-└── docker-compose.yml     # Docker setup
+├── backend/                # Django backend application
+│   ├── apps/              # Django applications
+│   │   ├── authentication/ # Auth system
+│   │   ├── users/         # User management  
+│   │   ├── tenants/       # Multi-tenancy
+│   │   ├── permissions/   # RBAC system
+│   │   ├── subscriptions/ # Billing & subscriptions
+│   │   └── translations/  # i18n support
+│   ├── config/            # Django configuration
+│   └── manage.py          # Django management
+├── frontend/              # Next.js frontend application
+│   ├── src/
+│   │   ├── app/          # Next.js App Router
+│   │   ├── components/   # React components
+│   │   └── lib/          # Frontend utilities
+│   ├── public/           # Static assets
+│   └── package.json      # Frontend dependencies
+├── .workspace/           # Development documentation
+├── docs/                 # 📚 Complete documentation
+├── requirements.txt      # Python dependencies
+└── docker-compose.yml   # Docker setup
 ```
 
 ## 🤝 Contributing
