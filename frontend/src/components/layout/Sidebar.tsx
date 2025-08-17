@@ -9,7 +9,8 @@ import {
   ChartBarIcon, 
   CogIcon,
   DocumentTextIcon,
-  BuildingOfficeIcon
+  BuildingOfficeIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -20,6 +21,7 @@ interface SidebarProps {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'Users', href: '/users', icon: UsersIcon },
+  { name: 'Roles', href: '/roles', icon: UserGroupIcon },
   { name: 'Tenants', href: '/tenants', icon: BuildingOfficeIcon },
   { name: 'Reports', href: '/reports', icon: DocumentTextIcon },
   { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
