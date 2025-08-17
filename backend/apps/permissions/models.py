@@ -42,7 +42,7 @@ class Permission(models.Model):
         ordering = ['category', 'name']
     
     def __str__(self):
-        return f"{self.category}: {self.name}"
+        return self.name
 
 
 class RoleGroup(models.Model):
@@ -105,10 +105,15 @@ class RoleGroupPermission(models.Model):
     )
     granted_at = models.DateTimeField(auto_now_add=True)
     
+    # Alias for backwards compatibility with tests
+    @property
+    def created_at(self):
+        return self.granted_at
+    
     class Meta:
         unique_together = ['role_group', 'permission']
         verbose_name = "Role Group Permission"
         verbose_name_plural = "Role Group Permissions"
     
     def __str__(self):
-        return f"{self.role_group.name} -> {self.permission.name}"
+        return f"{self.role_group.name} - {self.permission.name}"

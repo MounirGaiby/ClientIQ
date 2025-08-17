@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:15
+    image: postgres:15-alpine
     environment:
       POSTGRES_DB: clientiq
       POSTGRES_USER: clientiq
@@ -16,6 +16,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -28,9 +29,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
-  web:
-    build: .
+  backend:
+    build:
+      context: .
+      target: backend-dev
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
@@ -49,9 +53,28 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      target: runner
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
 
   celery:
-    build: .
+    build:
+      context: .
+      target: backend-dev
     command: celery -A config worker -l info
     volumes:
       - .:/app
@@ -64,9 +87,12 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    restart: unless-stopped
 
   celery-beat:
-    build: .
+    build:
+      context: .
+      target: backend-dev
     command: celery -A config beat -l info
     volumes:
       - .:/app
@@ -79,6 +105,21 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/var/www/static
+      - media_volume:/var/www/media
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
 
 volumes:
   postgres_data:

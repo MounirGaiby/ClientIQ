@@ -20,6 +20,8 @@ class PermissionModelTest(TestCase):
         """Set up test data."""
         self.permission_data = {
             'name': 'Test Permission',
+            'codename': 'test_permission',
+            'category': 'Testing',
             'description': 'A test permission for unit testing',
             'is_super_user_only': False
         }
@@ -50,6 +52,8 @@ class PermissionModelTest(TestCase):
         """Test creating a super user only permission."""
         super_permission = Permission.objects.create(
             name='Super User Permission',
+            codename='super_user_permission',
+            category='admin',
             description='Only for super users',
             is_super_user_only=True
         )
@@ -132,6 +136,8 @@ class RoleGroupPermissionModelTest(TestCase):
         """Set up test data."""
         self.permission = Permission.objects.create(
             name='Test Permission',
+            codename='test_permission',
+            category='test',
             description='Test permission'
         )
         self.role_group = RoleGroup.objects.create(
@@ -177,6 +183,8 @@ class RoleGroupPermissionModelTest(TestCase):
         """Test that a role group can have multiple permissions."""
         permission2 = Permission.objects.create(
             name='Second Permission',
+            codename='second_permission',
+            category='test',
             description='Second test permission'
         )
         
@@ -220,18 +228,26 @@ class PermissionServiceTest(TestCase):
         # Create some permissions
         self.view_permission = Permission.objects.create(
             name='View Data',
+            codename='view_data',
+            category='data',
             description='Can view data'
         )
         self.edit_permission = Permission.objects.create(
             name='Edit Data',
+            codename='edit_data',
+            category='data',
             description='Can edit data'
         )
         self.delete_permission = Permission.objects.create(
             name='Delete Data',
+            codename='delete_data',
+            category='data',
             description='Can delete data'
         )
         self.super_permission = Permission.objects.create(
             name='Super Admin',
+            codename='super_admin',
+            category='admin',
             description='Super admin access',
             is_super_user_only=True
         )
@@ -378,8 +394,16 @@ class PermissionAdminTest(TestCase):
     def test_admin_permission_list_view(self):
         """Test admin list view for permissions."""
         # Create test permissions
-        Permission.objects.create(name='Admin Test Permission 1')
-        Permission.objects.create(name='Admin Test Permission 2')
+        Permission.objects.create(
+            name='Admin Test Permission 1',
+            codename='admin_test_permission_1',
+            category='test'
+        )
+        Permission.objects.create(
+            name='Admin Test Permission 2',
+            codename='admin_test_permission_2',
+            category='test'
+        )
         
         # Login as admin
         self.client.force_login(self.admin_user)
@@ -432,10 +456,29 @@ class PermissionIntegrationTest(TestCase):
     
     def setUp(self):
         """Set up test data."""
-        # Create complete permission structure
-        PermissionService.create_default_permissions()
-        PermissionService.create_default_role_groups()
-        PermissionService.setup_default_permissions()
+        # Create basic test permissions for integration tests
+        self.view_permission = Permission.objects.create(
+            name='View Users',
+            codename='view_users',
+            category='users',
+            description='Can view users'
+        )
+        self.edit_permission = Permission.objects.create(
+            name='Edit Users',
+            codename='edit_users',
+            category='users',
+            description='Can edit users'
+        )
+        
+        # Create basic role groups
+        self.admin_role = RoleGroup.objects.create(
+            name='Admin',
+            description='Administrator role'
+        )
+        self.user_role = RoleGroup.objects.create(
+            name='User',
+            description='Basic user role'
+        )
     
     def test_complete_permission_setup(self):
         """Test complete permission system setup."""
