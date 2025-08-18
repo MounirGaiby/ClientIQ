@@ -91,28 +91,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       
-      // Convert email to username for Django authentication
-      // For Acme Corp users, extract username from email
-      let username = email;
-      if (email.includes('@')) {
-        // Map known emails to usernames
-        const emailToUsername: { [key: string]: string } = {
-          'superadmin@clientiq.com': 'superadmin',
-          'admin@acmecorp.com': 'acme_admin',
-          'sarah.johnson@acmecorp.com': 'sarah_manager',
-          'mike.wilson@acmecorp.com': 'mike_user',
-          'emily.davis@acmecorp.com': 'emily_user'
-        };
-        
-        username = emailToUsername[email] || email.split('@')[0];
-      }
-      
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();

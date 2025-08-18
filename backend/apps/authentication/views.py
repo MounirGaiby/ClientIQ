@@ -7,7 +7,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class LogoutView(APIView):
@@ -44,10 +46,14 @@ class CurrentUserView(APIView):
             "success": True,
             "data": {
                 "id": user.id,
-                "username": user.username,
                 "email": user.email,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
+                "full_name": user.full_name,
+                "user_type": user.user_type,
+                "department": user.department,
+                "job_title": user.job_title,
+                "is_tenant_admin": user.is_tenant_admin,
                 "is_staff": user.is_staff,
                 "is_superuser": user.is_superuser,
             }

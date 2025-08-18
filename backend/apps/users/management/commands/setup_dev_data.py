@@ -1,7 +1,8 @@
 from django.core.management.base import BaseCommand
-from django.contrib.auth.models import User
-from apps.users.models import UserProfile
+from django.contrib.auth import get_user_model
 from apps.demo.models import DemoRequest
+
+User = get_user_model()
 
 
 class Command(BaseCommand):
@@ -11,43 +12,38 @@ class Command(BaseCommand):
         self.stdout.write('Setting up initial data for Acme Corporation...')
         
         # Create system superuser (global admin)
-        if not User.objects.filter(username='superadmin').exists():
+        if not User.objects.filter(email='superadmin@clientiq.com').exists():
             super_admin = User.objects.create_superuser(
-                username='superadmin',
                 email='superadmin@clientiq.com',
                 password='SuperAdmin123!',
                 first_name='System',
-                last_name='Administrator'
+                last_name='Administrator',
+                user_type='admin',
+                is_tenant_admin=False,
+                department='IT',
+                job_title='System Administrator'
             )
-            super_admin.profile.user_type = 'admin'
-            super_admin.profile.is_tenant_admin = False
-            super_admin.profile.department = 'IT'
-            super_admin.profile.job_title = 'System Administrator'
-            super_admin.profile.save()
             self.stdout.write(self.style.SUCCESS('✓ Created system superuser (superadmin@clientiq.com / SuperAdmin123!)'))
         
         # Create Acme Corporation tenant admin
-        if not User.objects.filter(username='acme_admin').exists():
+        if not User.objects.filter(email='admin@acmecorp.com').exists():
             tenant_admin = User.objects.create_user(
-                username='acme_admin',
                 email='admin@acmecorp.com',
                 password='AcmeAdmin123!',
                 first_name='John',
                 last_name='Administrator',
-                is_staff=True
+                is_staff=True,
+                user_type='admin',
+                is_tenant_admin=True,
+                department='Management',
+                job_title='IT Administrator',
+                phone_number='+1-555-0001'
             )
-            tenant_admin.profile.user_type = 'admin'
-            tenant_admin.profile.is_tenant_admin = True
-            tenant_admin.profile.department = 'Management'
-            tenant_admin.profile.job_title = 'IT Administrator'
-            tenant_admin.profile.phone_number = '+1-555-0001'
-            tenant_admin.profile.save()
             self.stdout.write(self.style.SUCCESS('✓ Created Acme Corp tenant admin (admin@acmecorp.com / AcmeAdmin123!)'))
         
         # Create Acme Corporation users
         acme_users = [
             {
-                'username': 'sarah_manager',
                 'email': 'sarah.johnson@acmecorp.com',
                 'password': 'AcmeManager123!',
                 'first_name': 'Sarah',
@@ -58,7 +54,6 @@ class Command(BaseCommand):
                 'phone_number': '+1-555-0002'
             },
             {
-                'username': 'mike_user',
                 'email': 'mike.wilson@acmecorp.com', 
                 'password': 'AcmeUser123!',
                 'first_name': 'Mike',
@@ -69,7 +64,6 @@ class Command(BaseCommand):
                 'phone_number': '+1-555-0003'
             },
             {
-                'username': 'emily_user',
                 'email': 'emily.davis@acmecorp.com', 
                 'password': 'AcmeUser123!',
                 'first_name': 'Emily',
@@ -82,20 +76,8 @@ class Command(BaseCommand):
         ]
         
         for user_data in acme_users:
-            if not User.objects.filter(username=user_data['username']).exists():
-                user = User.objects.create_user(
-                    username=user_data['username'],
-                    email=user_data['email'],
-                    password=user_data['password'],
-                    first_name=user_data['first_name'],
-                    last_name=user_data['last_name']
-                )
-                user.profile.user_type = user_data['user_type']
-                user.profile.department = user_data['department']
-                user.profile.job_title = user_data['job_title']
-                user.profile.phone_number = user_data['phone_number']
-                user.profile.is_tenant_admin = False
-                user.profile.save()
+            if not User.objects.filter(email=user_data['email']).exists():
+                user = User.objects.create_user(**user_data)
                 self.stdout.write(self.style.SUCCESS(f'✓ Created Acme Corp user: {user_data["email"]}'))
         
         # Create sample demo requests for Acme Corp prospects

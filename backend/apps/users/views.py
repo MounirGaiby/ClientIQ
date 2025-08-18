@@ -4,7 +4,6 @@ Views for users app.
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from django.db import connection
 
 from .serializers import UserSerializer, UserCreateSerializer, UserUpdateSerializer
 

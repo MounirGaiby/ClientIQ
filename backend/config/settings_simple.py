@@ -11,7 +11,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Security Settings
 SECRET_KEY = 'django-insecure-dev-key-for-testing'
 DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'acme.localhost', '*.localhost']
+
+# CORS Settings for development
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://acme.localhost:3000",
+    "http://127.0.0.1:3000",
+]
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Database - SQLite for development
 DATABASES = {
@@ -29,11 +49,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # Third party
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    'corsheaders',
     
     # Our apps
     'apps.demo',
@@ -41,7 +60,11 @@ INSTALLED_APPS = [
     'apps.users',
 ]
 
+# Custom User Model
+AUTH_USER_MODEL = 'users.CustomUser'
+
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
