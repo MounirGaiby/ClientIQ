@@ -79,15 +79,6 @@ class DemoRequest(models.Model):
         help_text="Current status of the demo request"
     )
     
-    # Link to created tenant (when converted)
-    tenant = models.ForeignKey(
-        'tenants.Tenant',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        help_text="Tenant created from this demo request"
-    )
-    
     # Notes field for workflow tracking
     notes = models.TextField(
         blank=True,

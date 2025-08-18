@@ -1,59 +1,34 @@
 """
-Django settings for ClientIQ multi-tenant application.
+Minimal Django settings for ClientIQ development.
 """
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Security Settings
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-me-in-production')
-DEBUG = True  # Set to True for development
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+SECRET_KEY = 'django-insecure-dev-key-for-testing'
+DEBUG = True
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-# Database Configuration
+# Database - SQLite for development
 DATABASES = {
     'default': {
-        'ENGINE': 'django_tenants.postgresql_backend',
-        'NAME': os.getenv('DATABASE_NAME', 'clientiq_db'),
-        'USER': os.getenv('DATABASE_USER', 'clientiq_user'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD', 'clientiq_pass'),
-        'HOST': os.getenv('DATABASE_HOST', 'localhost'),
-        'PORT': os.getenv('DATABASE_PORT', '5432'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR.parent / 'db.sqlite3',
     }
 }
 
-# For development, we'll override to use SQLite
-if DEBUG:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR.parent / 'db.sqlite3',
-        }
-    }
-    # Remove tenant router for SQLite
-    DATABASE_ROUTERS = []
-
-DATABASE_ROUTERS = []
-
-# Disable tenant configuration for development
-TENANT_MODEL = None
-TENANT_DOMAIN_MODEL = None
-
-# Shared Apps (Public Schema)
-SHARED_APPS = [
-    'django.contrib.contenttypes',
+# Simple apps list
+INSTALLED_APPS = [
+    'django.contrib.admin',
     'django.contrib.auth',
+    'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.admin',
     
     # Third party
     'rest_framework',
@@ -65,10 +40,6 @@ SHARED_APPS = [
     'apps.authentication',
     'apps.users',
 ]
-
-# For development, use simple apps list
-if DEBUG:
-    INSTALLED_APPS = SHARED_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -155,11 +126,6 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 }
 
-# Email Configuration
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@clientiq.com')
+# Email Configuration for development
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@clientiq.com'
