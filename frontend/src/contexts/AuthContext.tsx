@@ -49,7 +49,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const fetchUserInfo = useCallback(async (authToken: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/me/`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/me/`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
@@ -57,7 +57,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (response.ok) {
-        const userData = await response.json();
+        const result = await response.json();
+        // Handle Django's response format
+        const userData = result.data || result;
         setUser(userData);
         setIsLoading(false);
         return true;
@@ -88,30 +90,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/auth/login/`, {
+      
+      // Convert email to username for Django authentication
+      // For Acme Corp users, extract username from email
+      let username = email;
+      if (email.includes('@')) {
+        // Map known emails to usernames
+        const emailToUsername: { [key: string]: string } = {
+          'superadmin@clientiq.com': 'superadmin',
+          'admin@acmecorp.com': 'acme_admin',
+          'sarah.johnson@acmecorp.com': 'sarah_manager',
+          'mike.wilson@acmecorp.com': 'mike_user',
+          'emily.davis@acmecorp.com': 'emily_user'
+        };
+        
+        username = emailToUsername[email] || email.split('@')[0];
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        const { access_token, user: userData } = data;
-        setToken(access_token);
-        setUser(userData);
-        localStorage.setItem('auth_token', access_token);
+        // Django returns 'access' not 'access_token'
+        const { access, refresh } = data;
+        setToken(access);
+        localStorage.setItem('auth_token', access);
+        localStorage.setItem('refresh_token', refresh);
+        
+        // Fetch user info with the new token
+        await fetchUserInfo(access);
+        
         setIsLoading(false);
         return { success: true };
       } else {
         setIsLoading(false);
-        return { success: false, error: data.message || 'Login failed' };
+        return { success: false, error: data.detail || data.message || 'Login failed' };
       }
-    } catch {
+    } catch (error) {
+      console.error('Login error:', error);
       setIsLoading(false);
-      return { success: false, error: 'Network error. Please try again.' };
+      return { success: false, error: 'Network error. Please check if the backend server is running.' };
     }
   };
 
@@ -120,25 +145,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setToken(null);
     setIsLoading(false);
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('refresh_token');
   };
 
   const refreshToken = async (): Promise<boolean> => {
-    const storedToken = localStorage.getItem('auth_token');
-    if (!storedToken) return false;
+    const storedRefreshToken = localStorage.getItem('refresh_token');
+    if (!storedRefreshToken) return false;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/refresh/`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh/`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${storedToken}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ refresh: storedRefreshToken }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        setToken(data.access_token);
-        localStorage.setItem('auth_token', data.access_token);
+        setToken(data.access);
+        localStorage.setItem('auth_token', data.access);
         return true;
       } else {
         logout();

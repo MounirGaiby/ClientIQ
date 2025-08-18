@@ -19,15 +19,13 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Extract subdomain from hostname
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const parts = hostname.split('.');
-      if (parts.length > 1 && parts[0] !== 'www' && parts[0] !== 'localhost') {
-        setSubdomain(parts[0]);
-      } else if (hostname.includes('localhost') && parts.length > 1) {
-        setSubdomain(parts[0]);
-      }
+    // Extract subdomain from hostname (client-side only)
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+    if (parts.length > 1 && parts[0] !== 'www' && parts[0] !== 'localhost') {
+      setSubdomain(parts[0]);
+    } else if (hostname.includes('localhost') && parts.length > 1) {
+      setSubdomain(parts[0]);
     }
   }, []);
 
