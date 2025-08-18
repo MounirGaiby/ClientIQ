@@ -3,6 +3,36 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Database
+db.sqlite3
+*.db
+*.sqlite
+
+# Build artifacts
+.next/
+.swc/
+build/
+dist/
+tsconfig.tsbuildinfo
+
+# Logs
+*.log
+django.log
+nextjs.log
+
+# Temporary auth files
+auth.json
+token.json
+
+# IDE folders
+.vscode/
+.workspace/
+.idea/
+
+# Documentation (keep only README.md)
+docs/
+instructions/
+
 # C extensions
 *.so
 
