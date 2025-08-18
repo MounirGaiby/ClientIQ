@@ -1,0 +1,22 @@
+{
+  "name": "clientiq-dev-scripts",
+  "version": "1.0.0",
+  "description": "Development scripts for ClientIQ full-stack application",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && source ../.venv/bin/activate && python manage.py migrate && python manage.py runserver 8000",
+    "dev:frontend": "cd frontend && npm run dev",
+    "setup": "python -m venv .venv && source .venv/bin/activate && pip install -r backend/requirements.txt && cd frontend && npm install",
+    "migrate": "cd backend && source ../.venv/bin/activate && python manage.py migrate",
+    "seed": "cd backend && source ../.venv/bin/activate && python manage.py setup_dev_data",
+    "test:backend": "cd backend && source ../.venv/bin/activate && python manage.py test",
+    "test:frontend": "cd frontend && npm test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.8"
+  }
+}
