@@ -47,8 +47,8 @@ export default function Layout({
 
         {/* Main content */}
         <div className={`flex-1 flex flex-col overflow-hidden ${showSidebar ? 'lg:ml-0' : ''}`}>
-          {/* Header */}
-          <Header user={user} onLogout={onLogout} />
+          {/* Header - only show for tenant domains (when showSidebar is true) */}
+          {showSidebar && <Header user={user} onLogout={onLogout} />}
 
           {/* Page content */}
           <main className="flex-1 overflow-y-auto">

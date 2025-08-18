@@ -1,35 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function LoginPage() {
+export default function TenantLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [subdomain, setSubdomain] = useState('');
   
   const { login } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    // Extract subdomain from hostname
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const parts = hostname.split('.');
-      if (parts.length > 1 && parts[0] !== 'www' && parts[0] !== 'localhost') {
-        setSubdomain(parts[0]);
-      } else if (hostname.includes('localhost') && parts.length > 1) {
-        setSubdomain(parts[0]);
-      }
-    }
-  }, []);
+  const params = useParams();
+  const subdomain = params.subdomain as string;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +47,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <span className="text-xl font-semibold text-gray-900">ClientIQ</span>
-                {subdomain && <span className="ml-2 text-sm text-gray-500">({subdomain})</span>}
+                <span className="ml-2 text-sm text-gray-500">({subdomain})</span>
               </div>
             </div>
           </div>
@@ -68,9 +56,7 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">
-            Sign in{subdomain ? ` to ${subdomain}` : ''}
-          </CardTitle>
+          <CardTitle className="text-2xl text-center">Sign in to {subdomain}</CardTitle>
           <CardDescription className="text-center">
             Enter your credentials to access your account
           </CardDescription>

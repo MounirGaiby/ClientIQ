@@ -63,7 +63,7 @@ SHARED_APPS = [
     'apps.tenants',
     'apps.demo',
     'apps.common',
-    'apps.users',  # User model needs to be in shared apps
+    # Note: users app removed from shared - only in tenant apps
     'apps.permissions',  # Permissions are shared across tenants
 ]
 
@@ -142,7 +142,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Custom user model
-AUTH_USER_MODEL = 'users.TenantUser'
+# Note: For multi-tenant setup, using default Django User model for public schema
+# and TenantUser model for tenant-specific operations
+# AUTH_USER_MODEL = 'users.TenantUser'
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'

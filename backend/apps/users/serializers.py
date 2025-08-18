@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from apps.permissions.models import Role
+from apps.tenant_permissions.models import TenantRole
 
 User = get_user_model()
 
@@ -9,17 +9,36 @@ class UserSerializer(serializers.ModelSerializer):
     """
     Serializer for user data (read operations).
     """
-    roles = serializers.StringRelatedField(many=True, read_only=True)
     full_name = serializers.CharField(source='get_full_name', read_only=True)
+    roles = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = [
             'id', 'email', 'first_name', 'last_name', 'full_name',
             'user_type', 'phone_number', 'is_active', 'roles',
-            'created_at', 'updated_at'
+            'department', 'job_title', 'is_tenant_admin',
+            'date_joined', 'last_login'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'date_joined', 'last_login']
+    
+    def get_roles(self, obj):
+        """Get user's roles within the tenant."""
+        from apps.tenant_permissions.models import TenantUserRole
+        user_roles = TenantUserRole.objects.filter(
+            user=obj, 
+            is_active=True,
+            role__is_active=True
+        ).select_related('role', 'role__role_group')
+        
+        return [
+            {
+                'id': ur.role.id,
+                'name': ur.role.name,
+                'role_group': ur.role.role_group.name
+            }
+            for ur in user_roles
+        ]
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -37,7 +56,8 @@ class UserCreateSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'email', 'first_name', 'last_name', 'user_type',
-            'phone_number', 'password', 'role_ids'
+            'phone_number', 'department', 'job_title', 
+            'is_tenant_admin', 'password', 'role_ids'
         ]
     
     def create(self, validated_data):
@@ -50,9 +70,14 @@ class UserCreateSerializer(serializers.ModelSerializer):
         
         # Assign roles
         if role_ids:
-            roles = Role.objects.filter(id__in=role_ids, is_active=True)
+            from apps.tenant_permissions.models import TenantRole, TenantUserRole
+            roles = TenantRole.objects.filter(id__in=role_ids, is_active=True)
             for role in roles:
-                role.users.add(user)
+                TenantUserRole.objects.create(
+                    user=user,
+                    role=role,
+                    assigned_by=self.context['request'].user if 'request' in self.context else None
+                )
         
         return user
 
@@ -71,7 +96,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'first_name', 'last_name', 'user_type',
-            'phone_number', 'is_active', 'role_ids'
+            'phone_number', 'is_active', 'department', 
+            'job_title', 'is_tenant_admin', 'role_ids'
         ]
     
     def update(self, instance, validated_data):
@@ -84,13 +110,21 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         
         # Update roles if provided
         if role_ids is not None:
+            from apps.tenant_permissions.models import TenantRole, TenantUserRole
+            
             # Clear existing roles
-            for role in instance.roles.all():
-                role.users.remove(instance)
+            TenantUserRole.objects.filter(user=instance).update(is_active=False)
             
             # Add new roles
-            roles = Role.objects.filter(id__in=role_ids, is_active=True)
+            roles = TenantRole.objects.filter(id__in=role_ids, is_active=True)
             for role in roles:
-                role.users.add(instance)
+                TenantUserRole.objects.update_or_create(
+                    user=instance,
+                    role=role,
+                    defaults={
+                        'is_active': True,
+                        'assigned_by': self.context['request'].user if 'request' in self.context else None
+                    }
+                )
         
         return instance

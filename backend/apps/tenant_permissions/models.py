@@ -85,12 +85,16 @@ class TenantUserRole(models.Model):
     user = models.ForeignKey(
         'users.TenantUser',  # Forward reference to avoid circular import
         on_delete=models.CASCADE,
-        related_name='user_roles'
+        related_name='user_roles',
+        null=True,  # Allow null temporarily for migration
+        blank=True
     )
     role = models.ForeignKey(
         TenantRole,
         on_delete=models.CASCADE,
-        related_name='user_assignments'
+        related_name='user_assignments',
+        null=True,  # Allow null temporarily for migration
+        blank=True
     )
     assigned_at = models.DateTimeField(auto_now_add=True)
     assigned_by = models.ForeignKey(
