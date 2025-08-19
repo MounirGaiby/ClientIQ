@@ -69,6 +69,11 @@ jobs:
         cd frontend
         npm ci
         
+    - name: Clear Next.js cache
+      run: |
+        cd frontend
+        rm -rf .next
+        
     - name: 1. Lint Check
       continue-on-error: true
       run: |
@@ -77,7 +82,14 @@ jobs:
         npm run lint || echo "⚠️ ESLint found some issues"
         echo "✅ Linting check completed"
         
-    - name: 2. Build Check
+    - name: 2. Test Check
+      run: |
+        cd frontend
+        echo "🧪 Running tests..."
+        npm test
+        echo "✅ Tests completed"
+        
+    - name: 3. Build Check
       run: |
         cd frontend
         echo "🚀 Testing build..."
@@ -95,6 +107,6 @@ jobs:
       run: |
         echo "✅ All CI checks passed!"
         echo "🐍 Backend: Lint ✅ Tests ✅"
-        echo "⚛️ Frontend: Lint ✅ Build ✅"
+        echo "⚛️ Frontend: Lint ✅ Tests ✅ Build ✅"
         echo ""
         echo "🚀 Ready for merge!"
