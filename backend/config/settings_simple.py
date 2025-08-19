@@ -64,6 +64,8 @@ SHARED_APPS = [
     # Apps installed in the public schema only (shared across all tenants)
     'django_tenants',  # Must be first
     'apps.tenants',    # Our tenant management
+    'apps.demo',       # Demo requests are shared (before tenant creation)
+    'apps.platform',   # Platform super users (Django admin access)
     
     # Core Django apps for shared schema
     'django.contrib.contenttypes',
@@ -71,6 +73,7 @@ SHARED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.admin',  # Django admin only in public schema
     'config',
 ]
 
@@ -80,21 +83,23 @@ TENANT_APPS = [
     'django.contrib.auth',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.admin',  # Admin only in tenant schemas
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
-    'apps.demo',
     'apps.authentication',
-    'apps.users',
+    'apps.users',  # Simplified tenant users (no superuser complexity)
 ]
 
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 
 
-# Custom User Model
-AUTH_USER_MODEL = 'users.CustomUser'
+# Custom User Models
+# Platform super users (public schema) for Django admin
+AUTH_USER_MODEL = 'platform.SuperUser'
+
+# Note: Tenant users use apps.users.CustomUser but don't override AUTH_USER_MODEL
+# They are managed separately in each tenant schema
 
 # django-tenants settings
 TENANT_MODEL = "tenants.Tenant"  # app_label.model_name
@@ -119,6 +124,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.authentication.middleware.TenantOnlyAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

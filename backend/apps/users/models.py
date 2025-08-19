@@ -2,79 +2,54 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 
 
-class CustomUserManager(BaseUserManager):
-    """Custom user manager for email authentication"""
+class TenantUserManager(BaseUserManager):
+    """Manager for tenant users (simplified)"""
     
     def create_user(self, email, password=None, **extra_fields):
         if not email:
-            raise ValueError('The Email field must be set')
+            raise ValueError('Email is required')
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
-    
-    def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True.')
-            
-        return self.create_user(email, password, **extra_fields)
 
 
 class CustomUser(AbstractUser):
     """
-    Custom User model that uses email as the unique identifier
-    instead of username.
+    Simplified tenant user model.
+    No superuser/staff complexity - just regular users with optional admin flag.
     """
-    username = None  # Remove the username field
+    username = None  # Remove username field
     email = models.EmailField(
         unique=True,
         help_text="Email address used for authentication"
     )
     
-    # Additional fields
+    # Simple admin flag - if True, user has all permissions in their tenant
+    is_admin = models.BooleanField(
+        default=False,
+        help_text="Tenant admin - has all permissions in this tenant"
+    )
+    
+    # Contact info
     phone_number = models.CharField(
         max_length=20,
         blank=True,
         help_text="Contact phone number"
     )
     
-    # Profile information
-    department = models.CharField(
-        max_length=100,
-        blank=True,
-        help_text="Department or team"
-    )
-    
+    # Profile info
     job_title = models.CharField(
         max_length=100,
         blank=True,
         help_text="Job title or position"
     )
     
-    # User type
-    USER_TYPE_CHOICES = [
-        ('admin', 'Administrator'),
-        ('manager', 'Manager'), 
-        ('user', 'Regular User'),
-    ]
-    
-    user_type = models.CharField(
-        max_length=20,
-        choices=USER_TYPE_CHOICES,
-        default='user',
-        help_text="User type determines default permissions"
-    )
-    
-    # Tenant admin flag (for multi-tenant scenarios)
-    is_tenant_admin = models.BooleanField(
-        default=False,
-        help_text="Whether this user is an admin for their tenant"
+    department = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Department or team"
     )
     
     # User preferences
@@ -87,15 +62,16 @@ class CustomUser(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
     
-    objects = CustomUserManager()
+    objects = TenantUserManager()
     
     class Meta:
-        verbose_name = "User"
-        verbose_name_plural = "Users"
+        verbose_name = "Tenant User"
+        verbose_name_plural = "Tenant Users"
         ordering = ['email']
     
     def __str__(self):
-        return f"{self.email} ({self.user_type})"
+        admin_status = " (Admin)" if self.is_admin else ""
+        return f"{self.email}{admin_status}"
     
     @property
     def full_name(self):
@@ -105,3 +81,19 @@ class CustomUser(AbstractUser):
         # Ensure email is lowercase
         self.email = self.email.lower()
         super().save(*args, **kwargs)
+    
+    def has_perm(self, perm, obj=None):
+        """
+        Permission check: admins have all permissions in their tenant
+        """
+        if self.is_admin:
+            return True
+        return super().has_perm(perm, obj)
+    
+    def has_perms(self, perm_list, obj=None):
+        """
+        Permission check: admins have all permissions in their tenant
+        """
+        if self.is_admin:
+            return True
+        return super().has_perms(perm_list, obj)
