@@ -1,23 +1,515 @@
 # ClientIQ 🚀
 
-**Modern Full-Stack Multi-Tenant SaaS Platform**
+Enterprise Multi-Tenant SaaS Platform built with Django backend and Next.js frontend. Provides complete tenant isolation, clean permission architecture, and scalable demo-to-tenant conversion workflow.
 
-ClientIQ is a sophisticated full-stack platform with Django backend and Next.js frontend, designed for managing client relationships with enterprise-grade features including multi-tenancy, advanced permissions, and modern React UI.
+## Architecture
 
-## 🏗️ Monorepo Structure
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                    ClientIQ Platform                        │
+├─────────────────────────────────────────────────────────────┤
+│  Frontend (Next.js 14)          │  Backend (Django 4.2.7)   │
+│  ├─ TypeScript + Tailwind      │  ├─ Multi-tenant postgres  │
+│  ├─ shadcn/ui components       │  ├─ Domain-based routing   │
+│  └─ Responsive design          │  └─ Clean permissions     │
+└─────────────────────────────────────────────────────────────┘
+```
 
-This repository contains both backend and frontend applications:
+## Features
 
-- **Backend** (`/backend/`): Django 4.2.7 with PostgreSQL and multi-tenant architecture
-- **Frontend** (`/frontend/`): Next.js 14 with TypeScript, Tailwind CSS, and shadcn/ui
+### Multi-Tenant Architecture
+
+- **Schema-based isolation**: Complete database separation per tenant
+- **Domain routing**: `tenant.localhost` → tenant schema  
+- **Auto-migration**: New tenants get complete database structure
+- **Demo conversion**: Seamless demo-to-tenant workflow
+
+### Permission System
+
+- **Platform level**: SuperUser model for platform administration
+- **Tenant level**: Simple `is_admin` flag for tenant admins
+- **Filtered permissions**: Only business-relevant permissions in tenant schemas
+- **No complexity**: Removed redundant superuser/staff fields
+
+### User Management
+
+- **Platform admins**: Full platform control via Django admin
+- **Tenant admins**: Complete control within their tenant (`is_admin=True`)
+- **Regular users**: Role-based permissions via groups
+- **Readonly users**: View-only platform access for auditing
+
+### Demo Conversion
+
+- **Demo requests**: Stored in public schema for prospects
+- **One-command conversion**: `convert_demo_to_tenant`
+- **Auto-provisioning**: Creates tenant + domain + admin user
+- **Permission filtering**: Excludes platform-level permissions
+
+## Project Structure
+
+```text
+ClientIQ/
+├── backend/                     # Django backend
+│   ├── apps/
+│   │   ├── platform/           # Platform super users (public schema)
+│   │   ├── tenants/            # Tenant management
+│   │   ├── demo/               # Demo requests (shared)
+│   │   ├── users/              # Tenant users (per schema)
+│   │   └── authentication/     # Auth middleware
+│   ├── config/                 # Django settings
+│   └── manage.py
+├── frontend/                   # Next.js frontend
+│   ├── src/
+│   │   ├── app/                # App router pages
+│   │   ├── components/         # Reusable components
+│   │   └── lib/                # Utilities
+│   └── package.json
+└── README.md
+```
+
+## Setup
+
+### Requirements
+
+- Python 3.12+
+- Node.js 18+
+- PostgreSQL 13+
+
+### Backend Installation
+
+```bash
+# Clone and setup
+git clone <repository-url>
+cd ClientIQ/backend
+
+# Setup virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# venv\Scripts\activate   # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Database setup
+createdb clientiq_db
+python manage.py migrate_schemas --shared
+
+# Create platform admin
+python manage.py shell -c "
+from apps.platform.models import SuperUser
+SuperUser.objects.create_superuser('admin@platform.com', 'platform123', 'Platform', 'Admin')
+"
+
+# Create demo tenant
+python manage.py shell -c "
+from apps.tenants.models import Tenant, Domain
+tenant = Tenant.objects.create(schema_name='acme', name='ACME Corp', contact_email='admin@acme.com')
+Domain.objects.create(domain='acme.localhost', tenant=tenant, is_primary=True)
+"
+
+# Setup tenant users
+python manage.py tenant_command setup_simple_tenant --schema=acme
+python manage.py tenant_command clean_tenant_permissions --schema=acme
+
+# Run server
+python manage.py runserver
+```
+
+### Frontend Installation
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Access URLs
+
+| URL | Purpose | Users |
+|-----|---------|-------|
+| `http://localhost:8000/admin/` | Platform Admin | Platform SuperUsers |
+| `http://localhost:8000/` | Public Schema | Demo requests, tenant management |
+| `http://acme.localhost:8000/` | ACME Tenant | ACME tenant users only |
+| `http://localhost:3000/` | Frontend App | All users (domain-aware) |
+
+## Default Credentials
+
+### Platform Access (Public Schema)
+
+**Platform Admin**: admin@platform.com / platform123
+
+- Django admin access
+- Tenant management
+- Platform configuration
+
+### Tenant Access (ACME Schema)
+
+**Admin**: admin@acme.com / admin123 (is_admin=True)
+
+**Manager**: manager@acme.com / manager123
+
+**User**: user@acme.com / user123
+
+## Management Commands
+
+### Tenant Operations
+
+```bash
+# Create tenant with users
+python manage.py tenant_command setup_simple_tenant --schema=<schema>
+
+# Clean tenant permissions  
+python manage.py tenant_command clean_tenant_permissions --schema=<schema>
+
+# Convert demo to tenant
+python manage.py convert_demo_to_tenant <demo_id> <schema> <domain>
+```
+
+### Permission Operations
+
+```bash
+# View tenant permissions
+python manage.py tenant_command shell --schema=<schema> -c "
+from django.contrib.auth.models import Permission
+for p in Permission.objects.all(): print(f'{p.content_type.app_label}.{p.codename}')
+"
+```
+
+## Multi-Tenant Workflow
+
+1. **Demo Request**: Prospect submits demo form → stored in public schema
+2. **Demo Approval**: Platform admin reviews in Django admin
+3. **Tenant Creation**: `convert_demo_to_tenant` command creates:
+   - New tenant schema with all tables
+   - Domain mapping (`company.localhost`)
+   - Admin user with `is_admin=True`
+   - Cleaned permission set (only 10 business permissions)
+4. **User Access**: Tenant users access via `company.localhost:8000`
+
+## Permission Architecture
+
+### Public Schema (40+ permissions)
+
+- Platform super user management
+- Tenant CRUD operations
+- Demo request management
+- Django admin access
+- System configuration
+
+### Tenant Schema (10 permissions)
+
+- `auth.add_group`, `auth.change_group`, `auth.delete_group`, `auth.view_group`
+- `users.add_customuser`, `users.change_customuser`, `users.delete_customuser`, `users.view_customuser`
+- `auth.view_permission`
+- `contenttypes.view_contenttype`
+
+### Permission Logic
+
+```python
+# Tenant admin check
+if user.is_admin:
+    return True  # Has all tenant permissions
+
+# Regular permission check
+return user.has_perm(permission)
+```
+
+## Testing
+
+```bash
+# Backend tests
+cd backend
+python manage.py test
+
+# Frontend tests  
+cd frontend
+npm test
+
+# Coverage report
+npm run test:coverage
+```
+
+## Development Workflow
+
+1. **Database Changes**: Create migrations for both shared and tenant schemas
+2. **Permission Updates**: Run `clean_tenant_permissions` after app changes
+3. **New Tenants**: Use management commands for consistent setup
+4. **Testing**: Validate both platform and tenant-level functionality
+
+## Production Considerations
+
+- **Database**: Use separate PostgreSQL instances for better isolation
+- **Domains**: Configure real domains instead of `.localhost`
+- **SSL**: Enable HTTPS for all tenant domains
+- **Monitoring**: Track per-tenant resource usage
+- **Backups**: Schema-aware backup strategy
+
+## Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Run tests: `python manage.py test` and `npm test`
+4. Commit changes: `git commit -m 'Add amazing feature'`
+5. Push to branch: `git push origin feature/amazing-feature`
+6. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+**Built with ❤️ for scalable multi-tenant applications**terprise Multi-Tenant SaaS Platform**
+
+ClientIQ is a production-ready multi-tenant SaaS platform built with Django backend and Next.js frontend. It provides complete tenant isolation, clean permission architecture, and scalable demo-to-tenant conversion workflow.
+
+## 🏗️ Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ClientIQ Platform                        │
+├─────────────────────────────────────────────────────────────┤
+│  Frontend (Next.js 14)          │  Backend (Django 4.2.7)   │
+│  ├─ TypeScript + Tailwind      │  ├─ Multi-tenant postgres  │
+│  ├─ shadcn/ui components       │  ├─ Domain-based routing   │
+│  └─ Responsive design          │  └─ Clean permissions     │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## ✨ Key Features
 
-- 🏢 **Multi-Tenant Architecture** - Schema-based tenant isolation
-- 🔐 **Advanced Authentication** - JWT with MFA support
-- 👥 **User Management** - Comprehensive user roles and permissions
-- 💳 **Subscription Management** - Flexible billing and payment processing
-- 🌍 **Internationalization** - Multi-language translation support
+### 🏢 **Multi-Tenant Architecture**
+- **Schema-based isolation**: Complete database separation per tenant
+- **Domain routing**: `tenant.localhost` → tenant schema
+- **Auto-migration**: New tenants get complete database structure
+- **Demo conversion**: Seamless demo-to-tenant workflow
+
+### 🔐 **Clean Permission System**
+- **Platform level**: SuperUser model for platform administration
+- **Tenant level**: Simple `is_admin` flag for tenant admins
+- **Filtered permissions**: Only business-relevant permissions in tenant schemas
+- **No complexity**: Removed redundant superuser/staff fields
+
+### 👥 **User Management**
+- **Platform admins**: Full platform control via Django admin
+- **Tenant admins**: Complete control within their tenant (`is_admin=True`)
+- **Regular users**: Role-based permissions via groups
+- **Readonly users**: View-only platform access for auditing
+
+### 🔄 **Demo-to-Tenant Conversion**
+- **Demo requests**: Stored in public schema for prospects
+- **One-command conversion**: `convert_demo_to_tenant`
+- **Auto-provisioning**: Creates tenant + domain + admin user
+- **Permission filtering**: Excludes platform-level permissions
+
+## 🏗️ Project Structure
+
+```
+ClientIQ/
+├── backend/                     # Django backend
+│   ├── apps/
+│   │   ├── platform/           # Platform super users (public schema)
+│   │   ├── tenants/            # Tenant management
+│   │   ├── demo/               # Demo requests (shared)
+│   │   ├── users/              # Tenant users (per schema)
+│   │   └── authentication/     # Auth middleware
+│   ├── config/                 # Django settings
+│   └── manage.py
+├── frontend/                   # Next.js frontend
+│   ├── src/
+│   │   ├── app/                # App router pages
+│   │   ├── components/         # Reusable components
+│   │   └── lib/                # Utilities
+│   └── package.json
+└── README.md
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.12+
+- Node.js 18+
+- PostgreSQL 13+
+
+### Backend Setup
+
+```bash
+# Clone and setup
+git clone <repository-url>
+cd ClientIQ/backend
+
+# Setup virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# venv\Scripts\activate   # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Database setup
+createdb clientiq_db
+python manage.py migrate_schemas --shared
+
+# Create platform admin
+python manage.py shell -c "
+from apps.platform.models import SuperUser
+SuperUser.objects.create_superuser('admin@platform.com', 'platform123', 'Platform', 'Admin')
+"
+
+# Create demo tenant
+python manage.py shell -c "
+from apps.tenants.models import Tenant, Domain
+tenant = Tenant.objects.create(schema_name='acme', name='ACME Corp', contact_email='admin@acme.com')
+Domain.objects.create(domain='acme.localhost', tenant=tenant, is_primary=True)
+"
+
+# Setup tenant users
+python manage.py tenant_command setup_simple_tenant --schema=acme
+python manage.py tenant_command clean_tenant_permissions --schema=acme
+
+# Run server
+python manage.py runserver
+```
+
+### Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## 🌐 Access Points
+
+| URL | Purpose | Users |
+|-----|---------|-------|
+| `http://localhost:8000/admin/` | Platform Admin | Platform SuperUsers |
+| `http://localhost:8000/` | Public Schema | Demo requests, tenant management |
+| `http://acme.localhost:8000/` | ACME Tenant | ACME tenant users only |
+| `http://localhost:3000/` | Frontend App | All users (domain-aware) |
+
+## 👤 Default Users
+
+### Platform Level (Public Schema)
+```
+🔧 Platform Admin: admin@platform.com / platform123
+   - Django admin access
+   - Tenant management
+   - Platform configuration
+```
+
+### Tenant Level (ACME Schema)
+```
+🔑 Admin:    admin@acme.com / admin123    (is_admin=True)
+👤 Manager:  manager@acme.com / manager123
+👤 User:     user@acme.com / user123
+```
+
+## 🔧 Management Commands
+
+### Tenant Management
+```bash
+# Create tenant with users
+python manage.py tenant_command setup_simple_tenant --schema=<schema>
+
+# Clean tenant permissions  
+python manage.py tenant_command clean_tenant_permissions --schema=<schema>
+
+# Convert demo to tenant
+python manage.py convert_demo_to_tenant <demo_id> <schema> <domain>
+```
+
+### Permission Management
+```bash
+# View tenant permissions
+python manage.py tenant_command shell --schema=<schema> -c "
+from django.contrib.auth.models import Permission
+for p in Permission.objects.all(): print(f'{p.content_type.app_label}.{p.codename}')
+"
+```
+
+## 🏢 Multi-Tenant Flow
+
+1. **Demo Request**: Prospect submits demo form → stored in public schema
+2. **Demo Approval**: Platform admin reviews in Django admin
+3. **Tenant Creation**: `convert_demo_to_tenant` command creates:
+   - New tenant schema with all tables
+   - Domain mapping (`company.localhost`)
+   - Admin user with `is_admin=True`
+   - Cleaned permission set (only 10 business permissions)
+4. **User Access**: Tenant users access via `company.localhost:8000`
+
+## 🔒 Permission Architecture
+
+### Public Schema (40+ permissions)
+- Platform super user management
+- Tenant CRUD operations
+- Demo request management
+- Django admin access
+- System configuration
+
+### Tenant Schema (10 permissions)
+- `auth.add_group`, `auth.change_group`, `auth.delete_group`, `auth.view_group`
+- `users.add_customuser`, `users.change_customuser`, `users.delete_customuser`, `users.view_customuser`
+- `auth.view_permission`
+- `contenttypes.view_contenttype`
+
+### Permission Logic
+```python
+# Tenant admin check
+if user.is_admin:
+    return True  # Has all tenant permissions
+
+# Regular permission check
+return user.has_perm(permission)
+```
+
+## 🧪 Testing
+
+```bash
+# Backend tests
+cd backend
+python manage.py test
+
+# Frontend tests  
+cd frontend
+npm test
+
+# Coverage report
+npm run test:coverage
+```
+
+## � Development Workflow
+
+1. **Database Changes**: Create migrations for both shared and tenant schemas
+2. **Permission Updates**: Run `clean_tenant_permissions` after app changes
+3. **New Tenants**: Use management commands for consistent setup
+4. **Testing**: Validate both platform and tenant-level functionality
+
+## 📊 Production Considerations
+
+- **Database**: Use separate PostgreSQL instances for better isolation
+- **Domains**: Configure real domains instead of `.localhost`
+- **SSL**: Enable HTTPS for all tenant domains
+- **Monitoring**: Track per-tenant resource usage
+- **Backups**: Schema-aware backup strategy
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Run tests: `python manage.py test` and `npm test`
+4. Commit changes: `git commit -m 'Add amazing feature'`
+5. Push to branch: `git push origin feature/amazing-feature`
+6. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+**Built with ❤️ for scalable multi-tenant applications**
 - 📊 **Rich API** - RESTful API with React TypeScript integration
 - 🐳 **Docker Ready** - Complete containerization support
 
