@@ -22,7 +22,6 @@ export default function EditUserModal({ isOpen, user, onClose, onUserUpdated }: 
   useEffect(() => {
     if (user) {
       setFormData({
-        email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
         user_type: user.user_type,
@@ -37,12 +36,6 @@ export default function EditUserModal({ isOpen, user, onClose, onUserUpdated }: 
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
-    }
 
     if (!formData.first_name) {
       newErrors.first_name = 'First name is required';
@@ -149,22 +142,6 @@ export default function EditUserModal({ isOpen, user, onClose, onUserUpdated }: 
                   <p className="mt-1 text-sm text-red-600">{errors.last_name}</p>
                 )}
               </div>
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address *
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email || ''}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                className={errors.email ? 'border-red-500' : ''}
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
             </div>
 
             {/* Role and Type */}

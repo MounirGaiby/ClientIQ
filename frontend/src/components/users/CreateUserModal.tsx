@@ -22,7 +22,6 @@ export default function CreateUserModal({ isOpen, onClose, onUserCreated }: Crea
     phone_number: '',
     department: '',
     job_title: '',
-    is_active: true,
     is_tenant_admin: false
   });
   const [loading, setLoading] = useState(false);
@@ -77,7 +76,6 @@ export default function CreateUserModal({ isOpen, onClose, onUserCreated }: Crea
         phone_number: '',
         department: '',
         job_title: '',
-        is_active: true,
         is_tenant_admin: false
       });
       setErrors({});
@@ -263,20 +261,6 @@ export default function CreateUserModal({ isOpen, onClose, onUserCreated }: Crea
                   onChange={(e) => handleInputChange('job_title', e.target.value)}
                 />
               </div>
-            </div>
-
-            {/* Status */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="is_active"
-                checked={formData.is_active}
-                onChange={(e) => handleInputChange('is_active', e.target.checked)}
-                className="rounded"
-              />
-              <label htmlFor="is_active" className="ml-2 text-sm text-gray-700">
-                Active User
-              </label>
             </div>
 
             {/* Form Actions */}
