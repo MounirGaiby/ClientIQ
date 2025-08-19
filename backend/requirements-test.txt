@@ -1,0 +1,46 @@
+# Test dependencies for ClientIQ backend
+# Run: pip install -r requirements-test.txt
+
+# Testing framework
+pytest==7.4.3
+pytest-django==4.7.0
+pytest-cov==4.1.0
+pytest-xdist==3.5.0  # Parallel test execution
+pytest-mock==3.12.0
+
+# Coverage reporting
+coverage[toml]==7.3.2
+
+# Factory boy for test data generation
+factory-boy==3.3.0
+
+# Faker for generating fake data
+Faker==20.1.0
+
+# Test database utilities
+pytest-postgresql==5.0.0
+
+# API testing
+responses==0.24.1
+
+# Time manipulation for tests
+freezegun==1.2.2
+
+# Mock and testing utilities
+mock==5.1.0
+
+# Django testing extensions
+django-test-plus==2.2.2
+django-webtest==1.9.11
+
+# Load testing (optional)
+locust==2.17.0
+
+# Performance testing
+pytest-benchmark==4.0.0
+
+# Django-specific testing
+django-extensions==3.2.3  # For shell_plus in testing
+
+# Tenant testing utilities (if available)
+# django-tenants[test]==3.5.0  # Already in main requirements
