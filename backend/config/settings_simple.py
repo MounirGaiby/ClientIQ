@@ -4,13 +4,14 @@ Minimal Django settings for ClientIQ development.
 
 from pathlib import Path
 import os
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Security Settings
-SECRET_KEY = 'django-insecure-dev-key-for-testing'
-DEBUG = True
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-for-testing')
+DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'acme.localhost', '*.localhost']
 
 # CORS Settings for development
@@ -33,37 +34,85 @@ CORS_ALLOWED_HEADERS = [
     'x-requested-with',
 ]
 
-# Database - SQLite for development
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR.parent / 'db.sqlite3',
-    }
-}
+# Database - PostgreSQL configuration with django-tenants
+import dj_database_url
 
-# Simple apps list
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
+DATABASE_URL = config('DATABASE_URL', default='sqlite:///db.sqlite3')
+
+if DATABASE_URL.startswith('postgresql'):
+    # PostgreSQL configuration with django-tenants backend
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL)
+    }
+    # Update engine to use django-tenants backend
+    DATABASES['default']['ENGINE'] = 'django_tenants.postgresql_backend'
+    
+    # Enable multi-tenancy
+    USE_MULTI_TENANCY = True
+else:
+    # Fallback to SQLite if PostgreSQL not configured (single tenant mode)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR.parent / 'db.sqlite3',
+        }
+    }
+    # Disable multi-tenancy for SQLite
+    USE_MULTI_TENANCY = False
+
+SHARED_APPS = [
+    # Apps installed in the public schema only (shared across all tenants)
+    'django_tenants',  # Must be first
+    'apps.tenants',    # Our tenant management
+    
+    # Core Django apps for shared schema
     'django.contrib.contenttypes',
+    'django.contrib.auth',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'config',
+]
+
+TENANT_APPS = [
+    # Apps to be installed per tenant schema (isolated per tenant)
+    'django.contrib.contenttypes',
+    'django.contrib.auth',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.admin',  # Admin only in tenant schemas
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
-    
-    # Our apps
     'apps.demo',
     'apps.authentication',
     'apps.users',
 ]
 
+INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
+
+
 # Custom User Model
 AUTH_USER_MODEL = 'users.CustomUser'
 
+# django-tenants settings
+TENANT_MODEL = "tenants.Tenant"  # app_label.model_name
+TENANT_DOMAIN_MODEL = "tenants.Domain"  # app_label.model_name
+
+# Database router for multi-tenancy
+DATABASE_ROUTERS = ['django_tenants.routers.TenantSyncRouter']
+
+# Required for django-tenants migrations
+MIGRATION_MODULES = {
+    'tenants': 'apps.tenants.migrations',
+    'users': 'apps.users.migrations',
+    'demo': 'apps.demo.migrations',
+    'authentication': 'apps.authentication.migrations',
+}
+
 MIDDLEWARE = [
+    'django_tenants.middleware.main.TenantMainMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

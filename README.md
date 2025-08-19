@@ -25,29 +25,44 @@ This repository contains both backend and frontend applications:
 
 Get ClientIQ running in under 10 minutes:
 
+### Option 1: Docker (Recommended)
+
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/clientiq.git
 cd clientiq
 
+# Start with Docker
+docker compose up --build
+
+# Run migrations
+docker compose exec backend python manage.py migrate
+
+# Create superuser (optional)
+docker compose exec backend python manage.py createsuperuser
+```
+
+### Option 2: Local Development
+
+```bash
 # Backend Setup
 cd backend
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py seed_db  # Optional: Add sample data
 python manage.py runserver &  # Runs on :8000
 
 # Frontend Setup (in new terminal)
 cd ../frontend
 npm install
 npm run dev  # Runs on :3000
-
-# Or use Docker for everything
-docker-compose up -d
 ```
 
 **🎯 Ready to go!** 
-- Frontend: `http://localhost:3000` (Next.js landing page)
+- Frontend: `http://localhost:3000` (Next.js application)
+- Backend API: `http://localhost:8000` (Django API)
+- Admin Panel: `http://localhost:8000/admin` (Django admin)
+
+📖 **For detailed Docker setup instructions, see [DOCKER.md](./DOCKER.md)**
 - Backend API: `http://localhost:8000/api/` (Django REST API)
 - Admin: `http://localhost:8000/admin/` (Django admin interface)
 

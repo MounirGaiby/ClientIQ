@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Layout } from '@/components/layout';
+import LandingHeader from '@/components/layout/LandingHeader';
+import LandingFooter from '@/components/layout/LandingFooter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,19 +56,7 @@ export default function Home() {
   if (submitted) {
     return (
       <Layout showSidebar={false}>
-        {/* Simple header for main domain */}
-        <div className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                  <span className="text-white font-bold text-lg">C</span>
-                </div>
-                <span className="text-xl font-semibold text-gray-900">ClientIQ</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <LandingHeader />
 
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50">
           <Card className="w-full max-w-md">
@@ -89,19 +79,7 @@ export default function Home() {
 
   return (
     <Layout showSidebar={false}>
-      {/* Simple header for main domain */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                <span className="text-white font-bold text-lg">C</span>
-              </div>
-              <span className="text-xl font-semibold text-gray-900">ClientIQ</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <LandingHeader />
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
         {/* Hero Section */}
@@ -130,7 +108,7 @@ export default function Home() {
         </div>
 
         {/* Demo Request Form */}
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div id="demo" className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl text-center">Request a Demo</CardTitle>
@@ -322,6 +300,8 @@ export default function Home() {
           </div>
         </div>
       </div>
+      
+      <LandingFooter />
     </Layout>
   );
 }

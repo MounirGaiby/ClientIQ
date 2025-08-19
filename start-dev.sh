@@ -70,22 +70,27 @@ echo -e "\n${BLUE}🔧 Starting Django Backend...${NC}"
 cd "$PROJECT_ROOT/backend"
 
 # Check if virtual environment exists
-if [ ! -d "$PROJECT_ROOT/.venv" ]; then
-    echo -e "${RED}❌ Virtual environment not found at $PROJECT_ROOT/.venv${NC}"
+if [ ! -d "venv" ]; then
+    echo -e "${RED}❌ Virtual environment not found at $PROJECT_ROOT/backend/venv${NC}"
     exit 1
 fi
 
 # Activate virtual environment and start Django in background
 (
-    source "$PROJECT_ROOT/.venv/bin/activate"
+    source "venv/bin/activate"
     echo -e "${GREEN}✅ Virtual environment activated${NC}"
     
-    # Run migrations if needed
-    echo -e "${YELLOW}🔄 Checking database migrations...${NC}"
-    python manage.py migrate --verbosity=0
+    # Setup PostgreSQL database and run migrations
+    echo -e "${YELLOW}🔄 Setting up PostgreSQL database...${NC}"
+    python3 manage.py setup_postgres
+    
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ Database setup failed${NC}"
+        exit 1
+    fi
     
     echo -e "${GREEN}🌐 Starting Django server on http://localhost:8000${NC}"
-    python manage.py runserver 8000
+    python3 manage.py runserver 8000
 ) &
 
 BACKEND_PID=$!
@@ -121,22 +126,36 @@ fi
 FRONTEND_PID=$!
 
 # Wait a moment for Next.js to start
-sleep 5
+sleep 8
 
-# Check if Next.js started successfully
-if check_port 3000; then
-    echo -e "${GREEN}✅ Next.js frontend running on port 3000${NC}"
-else
-    echo -e "${RED}❌ Failed to start Next.js frontend${NC}"
-    kill $BACKEND_PID 2>/dev/null || true
-    kill $FRONTEND_PID 2>/dev/null || true
-    exit 1
+# Check if Next.js started successfully - check both ports 3000 and 3001
+echo -e "${YELLOW}🔄 Waiting for Next.js to start...${NC}"
+FRONTEND_PORT=""
+for i in {1..10}; do
+    if check_port 3000; then
+        FRONTEND_PORT="3000"
+        break
+    elif check_port 3001; then
+        FRONTEND_PORT="3001"
+        break
+    fi
+    if [ $i -eq 10 ]; then
+        echo -e "${RED}❌ Failed to start Next.js frontend after 10 attempts${NC}"
+        kill $BACKEND_PID 2>/dev/null || true
+        kill $FRONTEND_PID 2>/dev/null || true
+        exit 1
+    fi
+    sleep 2
+done
+
+if [ ! -z "$FRONTEND_PORT" ]; then
+    echo -e "${GREEN}✅ Next.js frontend running on port $FRONTEND_PORT${NC}"
 fi
 
 # Display success message and credentials
 echo -e "\n${GREEN}🎉 SUCCESS! Both servers are running:${NC}"
 echo "=================================="
-echo -e "${BLUE}Frontend:${NC} http://localhost:3000"
+echo -e "${BLUE}Frontend:${NC} http://localhost:${FRONTEND_PORT:-3000}"
 echo -e "${BLUE}Backend API:${NC} http://localhost:8000/api/v1/"
 echo -e "${BLUE}Django Admin:${NC} http://localhost:8000/admin/"
 
