@@ -15,23 +15,23 @@ from apps.users.models import CustomUser
 
 
 class SetupSimpleTenantCommandTest(TestCase):
-    """Test setup_simple_tenant management command."""
+    """Test setup_simple management command."""
     
-    def test_setup_simple_tenant_command_exists(self):
-        """Test that setup_simple_tenant command exists."""
+    def test_setup_simple_command_exists(self):
+        """Test that setup_simple command exists."""
         try:
             from django.core.management import get_commands
             commands = get_commands()
-            self.assertIn('setup_simple_tenant', commands)
+            self.assertIn('setup_simple', commands)
         except ImportError:
             # Command might not be discoverable in test environment
             pass
     
-    def test_setup_simple_tenant_help(self):
-        """Test setup_simple_tenant command help."""
+    def test_setup_simple_help(self):
+        """Test setup_simple command help."""
         out = StringIO()
         try:
-            call_command('setup_simple_tenant', '--help', stdout=out)
+            call_command('setup_simple', '--help', stdout=out)
         except (CommandError, SystemExit):
             # Command help might exit with code
             pass
@@ -40,14 +40,14 @@ class SetupSimpleTenantCommandTest(TestCase):
         # Should contain command description
         self.assertTrue(len(help_text) > 0)
     
-    def test_setup_simple_tenant_with_defaults(self):
-        """Test setup_simple_tenant with default values."""
+    def test_setup_simple_with_defaults(self):
+        """Test setup_simple with default values."""
         out = StringIO()
         err = StringIO()
         
         try:
             call_command(
-                'setup_simple_tenant',
+                'setup_simple',
                 '--tenant-name=Test Tenant',
                 '--domain=test.localhost',
                 '--admin-email=admin@test.com',
@@ -65,27 +65,27 @@ class SetupSimpleTenantCommandTest(TestCase):
             # This is expected behavior
             pass
     
-    def test_setup_simple_tenant_missing_args(self):
-        """Test setup_simple_tenant with missing arguments."""
+    def test_setup_simple_missing_args(self):
+        """Test setup_simple with missing arguments."""
         out = StringIO()
         err = StringIO()
         
         try:
-            call_command('setup_simple_tenant', stdout=out, stderr=err)
+            call_command('setup_simple', stdout=out, stderr=err)
             
         except (CommandError, SystemExit) as e:
             # Should raise error for missing arguments
             error_output = err.getvalue()
             self.assertTrue(len(error_output) > 0 or str(e))
     
-    def test_setup_simple_tenant_invalid_email(self):
-        """Test setup_simple_tenant with invalid email."""
+    def test_setup_simple_invalid_email(self):
+        """Test setup_simple with invalid email."""
         out = StringIO()
         err = StringIO()
         
         try:
             call_command(
-                'setup_simple_tenant',
+                'setup_simple',
                 '--tenant-name=Invalid Email Tenant',
                 '--domain=invalid.localhost',
                 '--admin-email=invalid-email',
@@ -237,7 +237,7 @@ class ManagementCommandIntegrationTest(TestCase):
             
             # Check if our custom commands are discovered
             expected_commands = [
-                'setup_simple_tenant',
+                'setup_simple',
                 'clean_tenant_permissions'
             ]
             
@@ -316,7 +316,7 @@ class ManagementCommandSecurityTest(TestCase):
         
         try:
             call_command(
-                'setup_simple_tenant',
+                'setup_simple',
                 f'--tenant-name={malicious_input}',
                 '--domain=malicious.localhost',
                 '--admin-email=admin@test.com',
@@ -392,7 +392,7 @@ class ManagementCommandUtilityTest(TestCase):
         try:
             # Test with various argument formats
             call_command(
-                'setup_simple_tenant',
+                'setup_simple',
                 '--help',
                 stdout=out
             )

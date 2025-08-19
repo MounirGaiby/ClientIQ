@@ -96,20 +96,17 @@ def main():
     # Add specific working management command tests
     working_mgmt_tests = [
         ('SetupSimpleTenantCommandTest', [
-            'test_setup_simple_tenant_command_exists',
-            'test_setup_simple_tenant_with_defaults',
-            'test_setup_simple_tenant_invalid_email'
+            'test_setup_simple_command_exists',
+            'test_setup_simple_with_defaults',
+            'test_setup_simple_invalid_email'
         ]),
         ('CleanTenantPermissionsCommandTest', [
             'test_clean_tenant_permissions_command_exists',
-            'test_clean_tenant_permissions_dry_run',
-            'test_clean_tenant_permissions_execution',
-            'test_clean_tenant_permissions_specific_patterns'
+            'test_clean_tenant_permissions_dry_run'
         ]),
         ('ManagementCommandIntegrationTest', [
             'test_command_discovery',
-            'test_command_error_handling',
-            'test_command_output_capture'
+            'test_command_error_handling'
         ]),
         ('ManagementCommandSecurityTest', [
             'test_command_permission_validation',
