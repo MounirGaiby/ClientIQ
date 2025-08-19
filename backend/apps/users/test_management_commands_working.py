@@ -8,6 +8,8 @@ from django.core.management.base import CommandError
 from django.contrib.auth.models import Permission
 from io import StringIO
 import uuid
+import gc
+import sys
 
 from apps.users.models import CustomUser
 

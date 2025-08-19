@@ -341,6 +341,9 @@ class AuthenticationMiddlewareIntegrationTest(TestCase):
     
     def setUp(self):
         """Set up test data."""
+        from django.contrib.auth.middleware import AuthenticationMiddleware as DjangoAuthMiddleware
+        self.DjangoAuthMiddleware = DjangoAuthMiddleware
+        
         self.factory = RequestFactory()
         self.user_email = f'middleware-integration-{uuid.uuid4()}@test.com'
         self.user = CustomUser.objects.create_user(
@@ -353,7 +356,6 @@ class AuthenticationMiddlewareIntegrationTest(TestCase):
     def test_middleware_with_session(self):
         """Test middleware with session management."""
         from django.contrib.sessions.middleware import SessionMiddleware
-        from django.contrib.auth.middleware import AuthenticationMiddleware as DjangoAuthMiddleware
         
         request = self.factory.get('/')
         
@@ -363,7 +365,7 @@ class AuthenticationMiddlewareIntegrationTest(TestCase):
         request.session.save()
         
         # Apply auth middleware
-        auth_middleware = DjangoAuthMiddleware(lambda r: HttpResponse("OK"))
+        auth_middleware = self.DjangoAuthMiddleware(lambda r: HttpResponse("OK"))
         response = auth_middleware(request)
         
         self.assertEqual(response.status_code, 200)
@@ -382,7 +384,7 @@ class AuthenticationMiddlewareIntegrationTest(TestCase):
         request.session = SessionBase()
         request._messages = FallbackStorage(request)
         
-        middleware = AuthenticationMiddleware(lambda r: HttpResponse("OK"))
+        middleware = self.DjangoAuthMiddleware(lambda r: HttpResponse("OK"))
         response = middleware(request)
         
         self.assertEqual(response.status_code, 200)
@@ -395,7 +397,7 @@ class AuthenticationMiddlewareIntegrationTest(TestCase):
         def error_view(request):
             raise Exception("Test error")
         
-        middleware = AuthenticationMiddleware(error_view)
+        middleware = self.DjangoAuthMiddleware(error_view)
         
         # Should handle errors gracefully
         with self.assertRaises(Exception):
