@@ -563,8 +563,8 @@ Get ClientIQ running in under 10 minutes:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/clientiq.git
-cd clientiq
+git clone https://github.com/MounirGaiby/ClientIQ.git
+cd ClientIQ
 
 # Start with Docker
 docker compose up --build
@@ -596,25 +596,24 @@ npm run dev  # Runs on :3000
 - Backend API: `http://localhost:8000` (Django API)
 - Admin Panel: `http://localhost:8000/admin` (Django admin)
 
-📖 **For detailed Docker setup instructions, see [DOCKER.md](./DOCKER.md)**
+📖 **For detailed setup instructions, see [Deployment Guide](./docs/deployment.md)**
 - Backend API: `http://localhost:8000/api/` (Django REST API)
 - Admin: `http://localhost:8000/admin/` (Django admin interface)
 
 ## 📚 Documentation
 
-**👉 [Complete Documentation Wiki](./docs/README.md)** - Everything you need to know about ClientIQ
+**👉 [Complete Documentation](./docs/README.md)** - Everything you need to know about ClientIQ
 
 ### Quick Links
 
 | Resource | Description |
 |----------|-------------|
-| [🚀 Quick Start Guide](./docs/01-getting-started/quick-start.md) | Get up and running in 10 minutes |
-| [🏗️ System Architecture](./docs/02-architecture/system-architecture.md) | Technical architecture and design |
-| [📡 API Documentation](./docs/03-api/overview.md) | Complete API reference |
-| [⚛️ React Integration](./docs/04-frontend/react-typescript.md) | Frontend integration guide |
-| [🛠️ Development Guide](./docs/05-development/development.md) | Development best practices |
-| [🚀 Deployment Guide](./docs/06-deployment/deployment.md) | Production deployment |
-| [📖 Reference](./docs/07-reference/configuration.md) | Configuration and reference |
+| [🏗️ Architecture](./docs/architecture.md) | System architecture and design patterns |
+| [📡 API Documentation](./docs/api.md) | Complete API reference and examples |
+| [🏢 Multi-Tenant Guide](./docs/multi-tenant.md) | Multi-tenancy implementation details |
+| [🛠️ Development Guide](./docs/development.md) | Development setup and best practices |
+| [🧪 Testing Guide](./docs/testing.md) | Testing strategies and implementation |
+| [� Deployment Guide](./docs/deployment.md) | Production deployment instructions |
 
 ## 🛠️ Technology Stack
 
@@ -627,7 +626,7 @@ npm run dev  # Runs on :3000
 ## 🏗️ Project Structure
 
 ```bash
-clientiq/
+ClientIQ/
 ├── backend/                # Django backend application
 │   ├── apps/              # Django applications
 │   │   ├── authentication/ # Auth system
@@ -653,7 +652,7 @@ clientiq/
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Development Guide](./docs/05-development/development.md) for:
+We welcome contributions! Please see our [Development Guide](./docs/development.md) for:
 
 - 🔧 Development setup
 - 📝 Coding standards
@@ -662,14 +661,14 @@ We welcome contributions! Please see our [Development Guide](./docs/05-developme
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## 🆘 Support
 
-- 📚 **Documentation:** [Complete Wiki](./docs/README.md)
-- 🐛 **Issues:** [GitHub Issues](https://github.com/your-org/clientiq/issues)
-- 💬 **Discussions:** [GitHub Discussions](https://github.com/your-org/clientiq/discussions)
+- 📚 **Documentation:** [Complete Documentation](./docs/README.md)
+- 🐛 **Issues:** [GitHub Issues](https://github.com/MounirGaiby/ClientIQ/issues)
+- 💬 **Discussions:** [GitHub Discussions](https://github.com/MounirGaiby/ClientIQ/discussions)
 
 ---
 
-**Get started now!** 👉 [Quick Start Guide](./docs/01-getting-started/quick-start.md)
+**Get started now!** 👉 [Development Guide](./docs/development.md)
