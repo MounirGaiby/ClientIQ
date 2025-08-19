@@ -79,16 +79,11 @@ SHARED_APPS = [
 
 TENANT_APPS = [
     # Apps to be installed per tenant schema (isolated per tenant)
-    'django.contrib.contenttypes',
-    'django.contrib.auth',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
-    'corsheaders',
-    'apps.authentication',
-    'apps.users',  # Simplified tenant users (no superuser complexity)
+    # Only include apps that tenant users should have permissions for
+    'django.contrib.contenttypes',  # Required for permissions system
+    'django.contrib.auth',          # Required for groups/permissions (limited)
+    'django.contrib.sessions',      # Required for authentication
+    'apps.users',                   # Tenant user management only
 ]
 
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
