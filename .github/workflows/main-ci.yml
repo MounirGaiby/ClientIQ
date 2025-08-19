@@ -50,7 +50,7 @@ jobs:
     
   # Frontend validation  
   frontend:
-    name: Frontend (Lint + Build)
+    name: Frontend (Lint + Tests + Build)
     runs-on: ubuntu-latest
     
     steps:
