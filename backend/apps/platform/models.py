@@ -61,8 +61,8 @@ class SuperUser(AbstractBaseUser):
         Platform super users have all permissions unless readonly
         """
         if self.is_readonly:
-            # Readonly users can only view, not modify
-            return perm.endswith('_view') or perm.endswith('_change') or perm.endswith('_add') == False
+            # Readonly users can only view, not add/change/delete
+            return perm.endswith('_view') or 'view' in perm
         return True
     
     def has_perms(self, perm_list, obj=None):

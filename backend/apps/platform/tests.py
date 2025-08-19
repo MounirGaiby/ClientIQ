@@ -3,7 +3,7 @@ Comprehensive tests for platform app.
 Tests SuperUser model and platform-level functionality.
 """
 
-from django.test import TestCase, override_settings
+from django.test import TestCase, Client, override_settings
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from django.contrib.auth.models import Permission
@@ -12,6 +12,9 @@ from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.contrib.messages.middleware import MessageMiddleware
+from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
+import uuid
 
 from apps.platform.models import SuperUser
 from apps.platform.admin import SuperUserAdmin

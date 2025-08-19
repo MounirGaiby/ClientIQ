@@ -13,6 +13,19 @@ class TenantUserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
+    
+    def create_superuser(self, email, password=None, **extra_fields):
+        """Create and save a superuser with the given email and password."""
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_admin', True)
+        
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+            
+        return self.create_user(email, password, **extra_fields)
 
 
 class CustomUser(AbstractUser):
@@ -97,3 +110,11 @@ class CustomUser(AbstractUser):
         if self.is_admin:
             return True
         return super().has_perms(perm_list, obj)
+    
+    def has_module_perms(self, app_label):
+        """
+        Permission check: admins have module access in their tenant
+        """
+        if self.is_admin:
+            return True
+        return super().has_module_perms(app_label)
