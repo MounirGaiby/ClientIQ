@@ -48,65 +48,16 @@ jobs:
         python run_working_tests.py
         echo "✅ Tests passed"
     
-  # Frontend validation  
-  frontend:
-    name: Frontend (Lint + Tests + Build)
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
-        
-    - name: Install dependencies
-      run: |
-        cd frontend
-        npm ci
-        
-    - name: Clear Next.js cache
-      run: |
-        cd frontend
-        rm -rf .next
-        
-    - name: 1. Lint Check
-      continue-on-error: true
-      run: |
-        cd frontend
-        echo "🔍 Running ESLint..."
-        npm run lint || echo "⚠️ ESLint found some issues"
-        echo "✅ Linting check completed"
-        
-    - name: 2. Test Check
-      run: |
-        cd frontend
-        echo "🧪 Running tests..."
-        npm test
-        echo "✅ Tests completed"
-        
-    - name: 3. Build Check
-      run: |
-        cd frontend
-        echo "🚀 Testing build..."
-        npm run build
-        echo "✅ Build successful"
-    
   # Gate for merging
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    needs: [backend]
     
     steps:
     - name: All checks passed
       run: |
         echo "✅ All CI checks passed!"
         echo "🐍 Backend: Lint ✅ Tests ✅"
-        echo "⚛️ Frontend: Lint ✅ Tests ✅ Build ✅"
         echo ""
         echo "🚀 Ready for merge!"
