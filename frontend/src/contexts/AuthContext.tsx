@@ -47,12 +47,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // API base URL - in production this would come from environment variables
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+  // Get current tenant subdomain
+  const getCurrentSubdomain = () => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const parts = hostname.split('.');
+      if (parts.length > 1 && parts[0] !== 'www' && parts[0] !== 'localhost') {
+        return parts[0];
+      } else if (hostname.includes('localhost') && parts.length > 1) {
+        return parts[0];
+      }
+    }
+    return null;
+  };
+
+  // Make API request with proper tenant headers
+  const makeApiRequest = async (url: string, options: RequestInit = {}) => {
+    const subdomain = getCurrentSubdomain();
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(subdomain && { 'Host': `${subdomain}.localhost` }),
+      ...options.headers,
+    };
+
+    return fetch(`${API_BASE_URL}${url}`, {
+      ...options,
+      headers,
+    });
+  };
+
   const fetchUserInfo = useCallback(async (authToken: string): Promise<boolean> => {
     try {
+      const subdomain = getCurrentSubdomain();
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/me/`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
+          ...(subdomain && { 'Host': `${subdomain}.localhost` }),
         },
       });
 
@@ -91,10 +122,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       
+      const subdomain = getCurrentSubdomain();
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(subdomain && { 'Host': `${subdomain}.localhost` }),
         },
         body: JSON.stringify({ email, password }),
       });

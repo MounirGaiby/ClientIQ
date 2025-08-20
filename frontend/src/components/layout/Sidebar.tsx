@@ -1,16 +1,13 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import { 
   HomeIcon, 
   UsersIcon, 
-  ChartBarIcon, 
+  UserCircleIcon,
+  PhoneIcon,
   CogIcon,
-  DocumentTextIcon,
-  BuildingOfficeIcon,
-  UserGroupIcon
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -18,18 +15,20 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-  { name: 'Users', href: '/users', icon: UsersIcon },
-  { name: 'Roles', href: '/roles', icon: UserGroupIcon },
-  { name: 'Tenants', href: '/tenants', icon: BuildingOfficeIcon },
-  { name: 'Reports', href: '/reports', icon: DocumentTextIcon },
-  { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
-  { name: 'Settings', href: '/settings', icon: CogIcon },
-];
-
 export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const params = useParams();
+  const subdomain = params?.subdomain as string;
+
+  // Build navigation based on tenant context
+  const navigation = [
+    { name: 'Dashboard', href: `/tenant/${subdomain}/dashboard`, icon: HomeIcon },
+    { name: 'Contacts', href: `/tenant/${subdomain}/contacts`, icon: UserCircleIcon },
+    { name: 'Companies', href: `/tenant/${subdomain}/companies`, icon: BuildingOfficeIcon },
+    { name: 'Leads', href: `/tenant/${subdomain}/leads`, icon: PhoneIcon },
+    { name: 'Users', href: `/tenant/${subdomain}/users`, icon: UsersIcon },
+    { name: 'Settings', href: `/tenant/${subdomain}/settings`, icon: CogIcon },
+  ];
 
   return (
     <>
@@ -48,11 +47,14 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         <div className="flex flex-col h-full">
           {/* Sidebar header */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-            <Link href="/" className="flex items-center">
+            <Link href={`/tenant/${subdomain}/dashboard`} className="flex items-center">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
                 <span className="text-white font-bold text-lg">C</span>
               </div>
-              <span className="text-xl font-semibold text-gray-900">ClientIQ</span>
+              <div>
+                <span className="text-xl font-semibold text-gray-900">ClientIQ</span>
+                {subdomain && <span className="ml-2 text-sm text-gray-500">({subdomain})</span>}
+              </div>
             </Link>
             {/* Close button for mobile */}
             <button

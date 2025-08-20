@@ -16,9 +16,7 @@ class SuperUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_readonly', False)  # Full admin by default
         extra_fields.setdefault('is_active', True)
-        
         return self.create_user(email, password, **extra_fields)
 
 
@@ -26,15 +24,12 @@ class SuperUser(AbstractBaseUser):
     """
     Platform super users who can access Django admin.
     These users exist only in the public schema and manage the platform.
+    NO FLAGS NEEDED - they have admin access by default.
     """
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     is_active = models.BooleanField(default=True)
-    is_readonly = models.BooleanField(
-        default=False,
-        help_text="If True, can only view Django admin (no edit/delete permissions)"
-    )
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)
     
@@ -57,26 +52,15 @@ class SuperUser(AbstractBaseUser):
         return self.first_name
     
     def has_perm(self, perm, obj=None):
-        """
-        Platform super users have all permissions unless readonly
-        """
-        if self.is_readonly:
-            # Readonly users can only view, not add/change/delete
-            return perm.endswith('_view') or 'view' in perm
+        """Platform super users have all permissions"""
         return True
     
     def has_perms(self, perm_list, obj=None):
-        """
-        Platform super users have all permissions unless readonly
-        """
-        if self.is_readonly:
-            return all(self.has_perm(perm, obj) for perm in perm_list)
+        """Platform super users have all permissions"""
         return True
     
     def has_module_perms(self, app_label):
-        """
-        Platform super users have access to all modules
-        """
+        """Platform super users have access to all modules"""
         return True
     
     @property
@@ -86,5 +70,5 @@ class SuperUser(AbstractBaseUser):
     
     @property
     def is_superuser(self):
-        """All platform users are superusers unless readonly"""
-        return not self.is_readonly
+        """All platform users are superusers"""
+        return True

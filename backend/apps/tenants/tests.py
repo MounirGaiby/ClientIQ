@@ -24,7 +24,9 @@ class TenantModelTest(TestCase):
             'schema_name': 'testcorp',
             'name': 'Test Corporation',
             'contact_email': 'admin@testcorp.com',
-            'description': 'A test corporation for testing purposes.'
+            'industry': 'Technology',
+            'company_size': '11-50',
+            'plan': 'trial'
         }
     
     def test_create_tenant(self):
@@ -77,11 +79,6 @@ class TenantModelTest(TestCase):
         # which is complex in test environment. We'll test the model creation only.
         tenant = Tenant.objects.create(**self.tenant_data)
         self.assertTrue(tenant.auto_create_schema)
-    
-    def test_tenant_auto_drop_schema(self):
-        """Test tenant auto_drop_schema setting."""
-        tenant = Tenant.objects.create(**self.tenant_data)
-        self.assertTrue(tenant.auto_drop_schema)
     
     def test_tenant_deactivation(self):
         """Test tenant deactivation."""

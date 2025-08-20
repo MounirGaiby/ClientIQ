@@ -1,84 +1,162 @@
 """
 Django settings for ClientIQ multi-tenant application.
+Proper configuration following django-tenants best practices.
 """
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Security Settings
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-me-in-production')
-DEBUG = True  # Set to True for development
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production')
+DEBUG = config('DEBUG', default=True, cast=bool)
+
+# Proper ALLOWED_HOSTS configuration for multi-tenancy
+if DEBUG:
+    # Development: Allow localhost and all .localhost subdomains
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.localhost']
+else:
+    # Production: Set your actual domain
+    ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
+
+# CORS Settings
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True  # Development only
+else:
+    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',')
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Database Configuration
-DATABASES = {
-    'default': {
-        'ENGINE': 'django_tenants.postgresql_backend',
-        'NAME': os.getenv('DATABASE_NAME', 'clientiq_db'),
-        'USER': os.getenv('DATABASE_USER', 'clientiq_user'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD', 'clientiq_pass'),
-        'HOST': os.getenv('DATABASE_HOST', 'localhost'),
-        'PORT': os.getenv('DATABASE_PORT', '5432'),
-    }
-}
+DATABASE_URL = config('DATABASE_URL', default='')
 
-# For development, we'll override to use SQLite
-if DEBUG:
+if DATABASE_URL and DATABASE_URL.startswith('postgresql'):
+    # Production/PostgreSQL with multi-tenancy
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL)
+    }
+    DATABASES['default']['ENGINE'] = 'django_tenants.postgresql_backend'
+    USE_MULTI_TENANCY = True
+else:
+    # Development/SQLite - single tenant mode
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR.parent / 'db.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-    # Remove tenant router for SQLite
-    DATABASE_ROUTERS = []
+    USE_MULTI_TENANCY = False
 
-DATABASE_ROUTERS = []
-
-# Disable tenant configuration for development
-TENANT_MODEL = None
-TENANT_DOMAIN_MODEL = None
-
-# Shared Apps (Public Schema)
-SHARED_APPS = [
-    'django.contrib.contenttypes',
-    'django.contrib.auth',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.admin',
+# Multi-tenant App Configuration
+if USE_MULTI_TENANCY:
+    # Apps shared across all tenants (public schema)
+    SHARED_APPS = [
+        'django_tenants',  # Must be first for multi-tenant
+        'apps.tenants',    # Tenant management
+        'apps.demo',       # Demo requests (pre-tenant)
+        'apps.platform',   # Platform admin users
+        'apps.permissions', # Custom permissions & roles
+        'apps.authentication', # Auth middleware & admin
+        
+        # Django core apps
+        'django.contrib.contenttypes',
+        'django.contrib.auth',
+        'django.contrib.sessions',
+        'django.contrib.messages',
+        'django.contrib.staticfiles',
+        'django.contrib.admin',
+        
+        # Third party
+        'rest_framework',
+        'rest_framework_simplejwt',
+        'rest_framework_simplejwt.token_blacklist',
+        'corsheaders',
+    ]
     
-    # Third party
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
+    # Apps installed per tenant schema
+    TENANT_APPS = [
+        'django.contrib.contenttypes',
+        'django.contrib.auth',
+        'django.contrib.sessions',
+        'apps.users',     # Tenant users
+        'apps.contacts',  # Tenant data
+    ]
     
-    # Our apps
-    'apps.demo',
-    'apps.authentication',
-    'apps.users',
-]
-
-# For development, use simple apps list
-if DEBUG:
-    INSTALLED_APPS = SHARED_APPS
-
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
+    INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
+    
+    # Multi-tenant models
+    TENANT_MODEL = "tenants.Tenant"
+    TENANT_DOMAIN_MODEL = "tenants.Domain"
+    
+    # Database routing
+    DATABASE_ROUTERS = ['django_tenants.routers.TenantSyncRouter']
+    
+    # Middleware with tenant detection
+    MIDDLEWARE = [
+        'django_tenants.middleware.main.TenantMainMiddleware',  # Must be first
+        'corsheaders.middleware.CorsMiddleware',
+        'django.middleware.security.SecurityMiddleware',
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.middleware.common.CommonMiddleware',
+        'django.middleware.csrf.CsrfViewMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'django.contrib.messages.middleware.MessageMiddleware',
+        'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    ]
+    
+    # Platform admin users for public schema
+    AUTH_USER_MODEL = 'platform.SuperUser'
+    
+else:
+    # Single tenant mode (development)
+    INSTALLED_APPS = [
+        'django.contrib.admin',
+        'django.contrib.auth',
+        'django.contrib.contenttypes',
+        'django.contrib.sessions',
+        'django.contrib.messages',
+        'django.contrib.staticfiles',
+        'rest_framework',
+        'rest_framework_simplejwt',
+        'rest_framework_simplejwt.token_blacklist',
+        'corsheaders',
+        'apps.users',
+        'apps.demo',
+        'apps.contacts',
+        'apps.permissions',
+        'apps.authentication',
+        'apps.tenants',
+        'apps.platform',
+    ]
+    
+    MIDDLEWARE = [
+        'corsheaders.middleware.CorsMiddleware',
+        'django.middleware.security.SecurityMiddleware',
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.middleware.common.CommonMiddleware',
+        'django.middleware.csrf.CsrfViewMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'django.contrib.messages.middleware.MessageMiddleware',
+        'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    ]
+    
+    # Use custom user for development
+    AUTH_USER_MODEL = 'users.CustomUser'
 
 ROOT_URLCONF = 'config.urls'
 
@@ -122,7 +200,7 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
+# Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
@@ -156,10 +234,36 @@ SIMPLE_JWT = {
 }
 
 # Email Configuration
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@clientiq.com')
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+    EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+    EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+    EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@clientiq.com')
+
+# Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django_tenants': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+    },
+}

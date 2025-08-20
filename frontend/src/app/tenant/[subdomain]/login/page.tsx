@@ -27,7 +27,7 @@ export default function TenantLoginPage() {
     const result = await login(email, password);
     
     if (result.success) {
-      router.push('/dashboard');
+      router.push(`/tenant/${subdomain}/dashboard`);
     } else {
       setError(result.error || 'Login failed');
     }

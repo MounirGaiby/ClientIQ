@@ -1,9 +1,9 @@
 from django.core.management.base import BaseCommand
-from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.db import connection
+from apps.users.models import CustomUser  # Use specific model for tenant users
 
-User = get_user_model()
+User = CustomUser  # Override the get_user_model() issue
 
 
 class Command(BaseCommand):
@@ -26,17 +26,28 @@ class Command(BaseCommand):
         admin_group, created = Group.objects.get_or_create(name='Tenant Admin')
         
         if created:
-            # Get all permissions except superuser-only ones
+            # Get all permissions except superuser-only ones and Django system permissions
             tenant_permissions = Permission.objects.exclude(
                 codename__in=[
+                    # Django system permissions that should not be in tenant schemas
                     'add_permission', 'change_permission', 'delete_permission', 'view_permission',
                     'add_group', 'change_group', 'delete_group', 'view_group',
-                    'add_contenttype', 'change_contenttype', 'delete_contenttype', 'view_contenttype'
+                    'add_contenttype', 'change_contenttype', 'delete_contenttype', 'view_contenttype',
+                    
+                    # Superuser-only permissions (tenant management)
+                    'add_tenant', 'change_tenant', 'delete_tenant', 'view_tenant',
+                    'add_domain', 'change_domain', 'delete_domain', 'view_domain',
+                    'add_superuser', 'change_superuser', 'delete_superuser', 'view_superuser',
+                    
+                    # Other platform-only permissions
+                    'add_superuseronlypermission', 'change_superuseronlypermission', 
+                    'delete_superuseronlypermission', 'view_superuseronlypermission',
                 ]
             )
             
             admin_group.permissions.set(tenant_permissions)
             self.stdout.write(f'✅ Created Tenant Admin group with {tenant_permissions.count()} permissions')
+            self.stdout.write('🔒 Superuser-only permissions excluded from tenant schema')
         else:
             self.stdout.write('⏭️  Tenant Admin group already exists')
 
@@ -50,12 +61,9 @@ class Command(BaseCommand):
                 password='admin123',
                 first_name='Admin',
                 last_name='User',
-                user_type='admin',
-                is_staff=False,  # Not Django admin access
-                is_superuser=False,
                 department='Management',
                 job_title='Tenant Administrator',
-                is_tenant_admin=True
+                is_admin=True  # Using our simplified flag
             )
             # Add to tenant admin group
             admin_group = Group.objects.get(name='Tenant Admin')
@@ -71,11 +79,9 @@ class Command(BaseCommand):
                 password='manager123',
                 first_name='Manager',
                 last_name='User',
-                user_type='manager',
-                is_staff=False,
-                is_superuser=False,
                 department='Sales',
-                job_title='Sales Manager'
+                job_title='Sales Manager',
+                is_admin=False  # Regular manager, not admin
             )
             self.stdout.write(f'✅ Created manager: {manager_user.email}')
         else:
@@ -88,35 +94,32 @@ class Command(BaseCommand):
                 password='user123',
                 first_name='Regular',
                 last_name='User',
-                user_type='user',
-                is_staff=False,
-                is_superuser=False,
                 department='Sales',
-                job_title='Sales Representative'
+                job_title='Sales Representative',
+                is_admin=False  # Regular user
             )
             self.stdout.write(f'✅ Created regular user: {regular_user.email}')
         else:
             self.stdout.write('⏭️  Regular user already exists')
 
-        # 4. Superuser (can access Django admin)
+        # 4. Admin User (tenant admin but cannot access Django admin)
         if not User.objects.filter(email='superuser@acme.com').exists():
             super_user = User.objects.create_user(
                 email='superuser@acme.com',
                 password='super123',
                 first_name='Super',
                 last_name='User',
-                user_type='admin',
-                is_staff=True,  # Django admin access
-                is_superuser=True,  # All permissions
                 department='IT',
-                job_title='System Administrator'
+                job_title='System Administrator',
+                is_admin=True  # Tenant admin (but cannot access Django admin)
             )
-            self.stdout.write(f'✅ Created superuser: {super_user.email}')
+            self.stdout.write(f'✅ Created admin user: {super_user.email}')
         else:
-            self.stdout.write('⏭️  Superuser already exists')
+            self.stdout.write('⏭️  Admin user already exists')
 
         # Summary
         self.stdout.write('\n📊 User Summary:')
         for user in User.objects.all():
             groups = ', '.join([g.name for g in user.groups.all()]) or 'None'
-            self.stdout.write(f'  - {user.email} ({user.user_type}) - Groups: {groups}')
+            admin_status = 'Admin' if user.is_admin else 'Regular'
+            self.stdout.write(f'  - {user.email} ({user.job_title}) - {admin_status} - Groups: {groups}')

@@ -11,14 +11,14 @@ from django.conf import settings
 from unittest.mock import Mock, patch, MagicMock
 
 from apps.authentication.middleware import TenantOnlyAuthenticationMiddleware
-from apps.authentication.backends import EmailBackend
+from apps.authentication.backends import TenantAuthenticationBackend
 from apps.users.models import CustomUser
 from apps.platform.models import SuperUser
 from apps.tenants.models import Tenant, Domain
 
 
-class EmailBackendTest(TestCase):
-    """Test EmailBackend authentication backend."""
+class TenantAuthenticationBackendTest(TestCase):
+    """Test TenantAuthenticationBackend authentication backend."""
     
     def setUp(self):
         """Set up test data."""
@@ -38,7 +38,7 @@ class EmailBackendTest(TestCase):
             last_name='User'
         )
         
-        self.backend = EmailBackend()
+        self.backend = TenantAuthenticationBackend()
     
     def test_authenticate_valid_user(self):
         """Test authentication with valid email and password."""

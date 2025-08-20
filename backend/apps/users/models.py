@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 
 
@@ -15,28 +15,35 @@ class TenantUserManager(BaseUserManager):
         return user
     
     def create_superuser(self, email, password=None, **extra_fields):
-        """Create and save a superuser with the given email and password."""
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
+        """
+        For tenant users, 'superuser' just means admin within the tenant.
+        No actual Django superuser powers - just tenant admin.
+        """
         extra_fields.setdefault('is_admin', True)
-        
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True.')
-            
         return self.create_user(email, password, **extra_fields)
 
 
-class CustomUser(AbstractUser):
+class CustomUser(AbstractBaseUser, PermissionsMixin):
     """
-    Simplified tenant user model.
-    No superuser/staff complexity - just regular users with optional admin flag.
+    Clean tenant user model - NO superuser/staff fields.
+    Only has is_admin flag for tenant-level permissions.
+    Tenant users can NEVER access Django admin panel.
     """
-    username = None  # Remove username field
     email = models.EmailField(
         unique=True,
         help_text="Email address used for authentication"
+    )
+    
+    first_name = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="First name"
+    )
+    
+    last_name = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Last name"
     )
     
     # Simple admin flag - if True, user has all permissions in their tenant
@@ -44,6 +51,16 @@ class CustomUser(AbstractUser):
         default=False,
         help_text="Tenant admin - has all permissions in this tenant"
     )
+    
+    # Basic user status
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Designates whether this user should be treated as active"
+    )
+    
+    date_joined = models.DateTimeField(auto_now_add=True)
+    last_login = models.DateTimeField(blank=True, null=True)
+    
     
     # Contact info
     phone_number = models.CharField(
@@ -77,6 +94,17 @@ class CustomUser(AbstractUser):
     
     objects = TenantUserManager()
     
+    # Explicitly prevent Django admin access
+    @property
+    def is_staff(self):
+        """Tenant users are NEVER staff - only platform SuperUsers can access Django admin"""
+        return False
+    
+    @property 
+    def is_superuser(self):
+        """Tenant users are NEVER superuser - only platform SuperUsers have superuser powers"""
+        return False
+    
     class Meta:
         verbose_name = "Tenant User"
         verbose_name_plural = "Tenant Users"
@@ -99,6 +127,8 @@ class CustomUser(AbstractUser):
         """
         Permission check: admins have all permissions in their tenant
         """
+        if not self.is_active:
+            return False
         if self.is_admin:
             return True
         return super().has_perm(perm, obj)
@@ -107,14 +137,20 @@ class CustomUser(AbstractUser):
         """
         Permission check: admins have all permissions in their tenant
         """
+        if not self.is_active:
+            return False
         if self.is_admin:
             return True
         return super().has_perms(perm_list, obj)
     
     def has_module_perms(self, app_label):
         """
-        Permission check: admins have module access in their tenant
+        Permission check: admins have access to tenant modules only
         """
+        if not self.is_active:
+            return False
         if self.is_admin:
-            return True
-        return super().has_module_perms(app_label)
+            # Allow access to tenant apps only, never Django admin apps
+            tenant_apps = ['users', 'contacts', 'leads']
+            return app_label in tenant_apps
+        return False

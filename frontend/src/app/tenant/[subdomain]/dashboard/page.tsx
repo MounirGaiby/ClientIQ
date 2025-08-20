@@ -16,15 +16,15 @@ export default function TenantDashboardPage() {
   useEffect(() => {
     if (!user) {
       // User is not logged in, redirect to login
-      router.replace('/login');
+      router.replace(`/tenant/${subdomain}/login`);
     } else {
       setIsLoading(false);
     }
-  }, [user, router]);
+  }, [user, router, subdomain]);
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    router.push(`/tenant/${subdomain}/login`);
   };
 
   if (isLoading || !user) {

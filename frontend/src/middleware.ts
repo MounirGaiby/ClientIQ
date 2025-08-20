@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export function middleware(request: NextRequest) {
+// Function to validate if subdomain is a valid tenant
+async function isValidTenant(subdomain: string): Promise<boolean> {
+  try {
+    // Check with the backend API to see if this tenant exists
+    const response = await fetch(`http://localhost:8000/api/v1/tenants/validate/${subdomain}/`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Error validating tenant:', error);
+    return false;
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host') || '';
   
@@ -26,17 +43,38 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // If there's a subdomain, this is a tenant domain
+  // If there's a subdomain, validate it's a real tenant
   if (subdomain) {
-    // For tenant domains, we serve the pages directly
-    // The pages at /login and /dashboard are tenant-aware
+    const isValid = await isValidTenant(subdomain);
+    
+    if (!isValid) {
+      // Invalid tenant - redirect to main landing page
+      const mainDomain = isLocalhost ? 'localhost:3000' : 'clientiq.com';
+      return NextResponse.redirect(new URL(`http://${mainDomain}`, request.url));
+    }
+
+    
     if (pathname === '/') {
       // Tenant root -> use tenant-root page to determine redirect
       return NextResponse.rewrite(new URL('/tenant-root', request.url));
     }
     
-    // For /login and /dashboard, serve them directly
-    // They are already tenant-aware through client-side subdomain detection
+    // Rewrite /login to tenant-specific login page
+    if (pathname === '/login') {
+      return NextResponse.rewrite(new URL(`/tenant/${subdomain}/login`, request.url));
+    }
+    
+    // Rewrite /dashboard to tenant-specific dashboard page
+    if (pathname === '/dashboard') {
+      return NextResponse.rewrite(new URL(`/tenant/${subdomain}/dashboard`, request.url));
+    }
+    
+    // Rewrite other tenant paths like /users, /contacts, etc.
+    if (pathname.match(/^\/(users|contacts|companies|leads|settings)$/)) {
+      return NextResponse.rewrite(new URL(`/tenant/${subdomain}${pathname}`, request.url));
+    }
+    
+    // For other paths, continue normally
     return NextResponse.next();
   }
   

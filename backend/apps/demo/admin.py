@@ -29,8 +29,9 @@ class DemoRequestAdmin(admin.ModelAdmin):
     
     search_fields = [
         'company_name',
-        'contact_name',
-        'contact_email',
+        'first_name',
+        'last_name',
+        'email',
         'industry',
     ]
     
@@ -41,7 +42,7 @@ class DemoRequestAdmin(admin.ModelAdmin):
             'fields': ('company_name', 'company_size', 'industry')
         }),
         ('Contact Information', {
-            'fields': ('contact_name', 'contact_email', 'contact_phone')
+            'fields': ('first_name', 'last_name', 'email', 'phone', 'job_title')
         }),
         ('Request Details', {
             'fields': ('message', 'status', 'admin_notes')

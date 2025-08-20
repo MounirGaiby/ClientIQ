@@ -45,38 +45,34 @@ class SuperUserModelTest(TestCase):
         self.assertTrue(user.is_staff)
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_active)
-        self.assertFalse(user.is_readonly)
         self.assertTrue(user.check_password('adminpass123'))
     
-    def test_create_readonly_user(self):
-        """Test creating a readonly user."""
+    def test_create_regular_user(self):
+        """Test creating a regular platform user."""
         user = SuperUser.objects.create_user(
-            email='readonly@platform.com',
-            password='readonlypass123',
-            first_name='Readonly',
-            last_name='User',
-            is_readonly=True
+            email='regular@platform.com',
+            password='regularpass123',
+            first_name='Regular',
+            last_name='User'
         )
         
-        self.assertEqual(user.email, 'readonly@platform.com')
-        self.assertFalse(user.is_staff)
-        self.assertFalse(user.is_superuser)
+        self.assertEqual(user.email, 'regular@platform.com')
+        self.assertTrue(user.is_staff)  # All platform users can access admin
+        self.assertTrue(user.is_superuser)  # All platform users are superusers now
         self.assertTrue(user.is_active)
-        self.assertTrue(user.is_readonly)
     
-    def test_readonly_user_staff_properties(self):
-        """Test that readonly user has correct staff properties."""
+    def test_platform_user_admin_access(self):
+        """Test that platform users have admin access."""
         user = SuperUser.objects.create_user(
-            email='readonly@platform.com',
-            password='readonlypass123',
-            first_name='Readonly',
-            last_name='User',
-            is_readonly=True
+            email='admin@platform.com',
+            password='adminpass123',
+            first_name='Admin',
+            last_name='User'
         )
         
-        # Readonly users should not have staff/superuser access
-        self.assertFalse(user.is_staff)
-        self.assertFalse(user.is_superuser)
+        # All platform users should have full admin access
+        self.assertTrue(user.is_staff)  # Can access admin
+        self.assertTrue(user.is_superuser)  # Full superuser access
     
     def test_regular_platform_user_properties(self):
         """Test regular platform user properties."""
@@ -87,10 +83,9 @@ class SuperUserModelTest(TestCase):
             last_name='User'
         )
         
-        # Regular platform users have staff access but not superuser
+        # All platform users have full admin access
         self.assertTrue(user.is_staff)
-        self.assertFalse(user.is_superuser)
-        self.assertFalse(user.is_readonly)
+        self.assertTrue(user.is_superuser)
     
     def test_email_unique_constraint(self):
         """Test that email must be unique."""
@@ -110,7 +105,7 @@ class SuperUserModelTest(TestCase):
     def test_str_representation(self):
         """Test string representation of SuperUser."""
         user = SuperUser.objects.create_user(**self.user_data)
-        expected = f"{user.first_name} {user.last_name} ({user.email})"
+        expected = f"{user.email} (Platform Admin)"
         self.assertEqual(str(user), expected)
     
     def test_user_manager_create_user(self):
@@ -120,7 +115,6 @@ class SuperUserModelTest(TestCase):
         self.assertEqual(user.email, self.user_data['email'])
         self.assertTrue(user.check_password(self.user_data['password']))
         self.assertTrue(user.is_active)
-        self.assertFalse(user.is_readonly)
     
     def test_user_manager_create_superuser(self):
         """Test UserManager create_superuser method."""
@@ -160,19 +154,18 @@ class SuperUserModelTest(TestCase):
         
         self.assertEqual(user.email, 'TEST@platform.com')  # Domain normalized to lowercase
     
-    def test_readonly_user_cannot_be_superuser(self):
-        """Test that readonly users cannot be superuser."""
+    def test_platform_user_permissions(self):
+        """Test that platform users have full permissions."""
         user = SuperUser.objects.create_user(
-            email='readonly@platform.com',
-            password='readonlypass123',
-            first_name='Readonly',
-            last_name='User',
-            is_readonly=True
+            email='admin@platform.com',
+            password='adminpass123',
+            first_name='Admin',
+            last_name='User'
         )
         
-        # Even if we try to make them superuser, they shouldn't be
-        self.assertFalse(user.is_superuser)
-        self.assertFalse(user.is_staff)
+        # Platform users have full access
+        self.assertTrue(user.is_superuser)
+        self.assertTrue(user.is_staff)
 
 
 class SuperUserAdminTest(TestCase):
@@ -204,16 +197,14 @@ class SuperUserAdminTest(TestCase):
         """Test admin list display configuration."""
         expected_fields = [
             'email', 'first_name', 'last_name',
-            'is_active', 'is_readonly', 'is_staff', 'is_superuser',
-            'date_joined'
+            'is_active', 'date_joined'
         ]
         self.assertEqual(list(self.admin.list_display), expected_fields)
     
     def test_admin_list_filter(self):
         """Test admin list filter configuration."""
         expected_filters = [
-            'is_active', 'is_readonly', 'is_staff', 'is_superuser',
-            'date_joined'
+            'is_active', 'date_joined'
         ]
         self.assertEqual(list(self.admin.list_filter), expected_filters)
     
@@ -261,14 +252,6 @@ class SuperUserIntegrationTest(TestCase):
             first_name='Regular',
             last_name='User'
         )
-        
-        self.readonly_user = SuperUser.objects.create_user(
-            email='readonly@platform.com',
-            password='readonlypass123',
-            first_name='Readonly',
-            last_name='User',
-            is_readonly=True
-        )
     
     def test_superuser_has_all_permissions(self):
         """Test that superuser has all permissions."""
@@ -280,21 +263,11 @@ class SuperUserIntegrationTest(TestCase):
     
     def test_regular_user_permissions(self):
         """Test regular user permissions."""
-        self.assertFalse(self.regular_user.is_superuser)
+        self.assertTrue(self.regular_user.is_superuser)  # All platform users are superusers now
         self.assertTrue(self.regular_user.is_staff)
         
-        # Regular users don't automatically have permissions
-        self.assertFalse(self.regular_user.has_perm('auth.add_user'))
-    
-    def test_readonly_user_permissions(self):
-        """Test readonly user permissions."""
-        self.assertFalse(self.readonly_user.is_superuser)
-        self.assertFalse(self.readonly_user.is_staff)
-        self.assertTrue(self.readonly_user.is_readonly)
-        
-        # Readonly users have no permissions
-        self.assertFalse(self.readonly_user.has_perm('auth.add_user'))
-        self.assertFalse(self.readonly_user.has_module_perms('auth'))
+        # All platform users have all permissions
+        self.assertTrue(self.regular_user.has_perm('auth.add_user'))
     
     def test_user_authentication(self):
         """Test user authentication."""

@@ -6,7 +6,7 @@ djangorestframework==3.14.0
 django-tenants==3.5.0
 
 # Authentication
-djangorestframework-simplejwt==5.3.0
+djangorestframework-simplejwt==5.5.1
 
 # Database
 psycopg2-binary==2.9.7
