@@ -57,7 +57,8 @@ export default function UsersPage() {
   const makeApiRequest = useCallback(async (url: string, options: RequestInit = {}) => {
     if (!token) throw new Error('No authentication token');
     
-    return fetch(`http://localhost:8000${url}`, {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    return fetch(`${apiUrl}${url}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',

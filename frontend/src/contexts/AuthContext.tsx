@@ -23,6 +23,7 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   refreshToken: () => Promise<boolean>;
+  makeApiRequest: (url: string, options?: RequestInit) => Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -201,6 +202,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     isLoading,
     refreshToken,
+    makeApiRequest,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

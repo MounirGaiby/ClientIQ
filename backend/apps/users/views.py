@@ -3,11 +3,9 @@ Views for users app.
 """
 from rest_framework import generics, permissions
 from rest_framework.response import Response
-from django.contrib.auth import get_user_model
 
+from .models import CustomUser
 from .serializers import UserSerializer, UserCreateSerializer, UserUpdateSerializer
-
-User = get_user_model()
 
 
 class UserListCreateView(generics.ListCreateAPIView):
@@ -18,7 +16,7 @@ class UserListCreateView(generics.ListCreateAPIView):
     
     def get_queryset(self):
         # Return users for the current tenant only
-        return User.objects.all()
+        return CustomUser.objects.all()
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -33,7 +31,7 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        return User.objects.all()
+        return CustomUser.objects.all()
     
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface User {
   id: number;
@@ -35,7 +36,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [subdomain, setSubdomain] = useState('');
-  const [activeView, setActiveView] = useState<'overview' | 'users' | 'contacts'>('overview');
+  const [activeTab, setActiveTab] = useState('overview');
   
   const { user, logout, token, makeApiRequest } = useAuth();
   const router = useRouter();
@@ -64,24 +65,14 @@ export default function DashboardPage() {
       
       try {
         // Fetch users
-        const usersResponse = await makeApiRequest('/api/v1/users/', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        const usersResponse = await makeApiRequest('/api/v1/users/');
         if (usersResponse.ok) {
           const usersData = await usersResponse.json();
           setUsers(usersData.results || usersData);
         }
 
         // Fetch contacts
-        const contactsResponse = await makeApiRequest('/api/v1/contacts/', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        const contactsResponse = await makeApiRequest('/api/v1/contacts/');
         if (contactsResponse.ok) {
           const contactsData = await contactsResponse.json();
           setContacts(contactsData.results || contactsData);
@@ -138,56 +129,24 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8">
-            <button
-              onClick={() => setActiveView('overview')}
-              className={`border-b-2 py-4 px-1 text-sm font-medium ${
-                activeView === 'overview' 
-                  ? 'border-blue-500 text-blue-600' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveView('users')}
-              className={`border-b-2 py-4 px-1 text-sm font-medium ${
-                activeView === 'users' 
-                  ? 'border-blue-500 text-blue-600' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Users ({users.length})
-            </button>
-            <button
-              onClick={() => setActiveView('contacts')}
-              className={`border-b-2 py-4 px-1 text-sm font-medium ${
-                activeView === 'contacts' 
-                  ? 'border-blue-500 text-blue-600' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Contacts ({contacts.length})
-            </button>
-          </nav>
-        </div>
-      </div>
-
       {/* Main content */}
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          {activeView === 'overview' && (
-            <div className="space-y-6">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-                <p className="mt-2 text-gray-600">
-                  Welcome to your {subdomain ? `${subdomain} ` : ''}tenant dashboard
-                </p>
-              </div>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="mt-2 text-gray-600">
+              Welcome to your {subdomain ? `${subdomain} ` : ''}tenant dashboard
+            </p>
+          </div>
 
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="contacts">Contacts</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Overview Cards */}
                 <Card>
@@ -228,23 +187,14 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
               </div>
-            </div>
-          )}
+            </TabsContent>
 
-          {activeView === 'users' && (
-            <div className="space-y-6">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Users</h1>
-                <p className="mt-2 text-gray-600">
-                  Manage users in your organization
-                </p>
-              </div>
-
+            <TabsContent value="users" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>User Management</CardTitle>
+                  <CardTitle>Users</CardTitle>
                   <CardDescription>
-                    All users in your {subdomain} tenant
+                    Manage users in your organization
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -262,7 +212,6 @@ export default function DashboardPage() {
                             <th className="text-left py-2 px-4">Email</th>
                             <th className="text-left py-2 px-4">Name</th>
                             <th className="text-left py-2 px-4">Department</th>
-                            <th className="text-left py-2 px-4">Job Title</th>
                             <th className="text-left py-2 px-4">Role</th>
                             <th className="text-left py-2 px-4">Status</th>
                           </tr>
@@ -275,7 +224,6 @@ export default function DashboardPage() {
                                 {user.full_name || '-'}
                               </td>
                               <td className="py-2 px-4">{user.department || '-'}</td>
-                              <td className="py-2 px-4">{user.job_title || '-'}</td>
                               <td className="py-2 px-4">
                                 <span className={`inline-block px-2 py-1 text-xs rounded-full ${
                                   user.is_admin 
@@ -302,23 +250,14 @@ export default function DashboardPage() {
                   )}
                 </CardContent>
               </Card>
-            </div>
-          )}
+            </TabsContent>
 
-          {activeView === 'contacts' && (
-            <div className="space-y-6">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Contacts</h1>
-                <p className="mt-2 text-gray-600">
-                  Manage your contact database
-                </p>
-              </div>
-
+            <TabsContent value="contacts" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Contact Management</CardTitle>
+                  <CardTitle>Contacts</CardTitle>
                   <CardDescription>
-                    All contacts in your database
+                    Manage your contact database
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -363,8 +302,8 @@ export default function DashboardPage() {
                   )}
                 </CardContent>
               </Card>
-            </div>
-          )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

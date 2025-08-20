@@ -4,7 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 async function isValidTenant(subdomain: string): Promise<boolean> {
   try {
     // Check with the backend API to see if this tenant exists
-    const response = await fetch(`http://localhost:8000/api/v1/tenants/validate/${subdomain}/`, {
+    const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1';
+    const response = await fetch(`${apiUrl}/tenants/validate/${subdomain}/`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -49,11 +50,15 @@ export async function middleware(request: NextRequest) {
     
     if (!isValid) {
       // Invalid tenant - redirect to main landing page
-      const mainDomain = isLocalhost ? 'localhost:3000' : 'clientiq.com';
-      return NextResponse.redirect(new URL(`http://${mainDomain}`, request.url));
+      const isDevelopment = process.env.NEXT_PUBLIC_IS_DEVELOPMENT === 'true';
+      const mainDomain = isDevelopment 
+        ? (process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'localhost:3000')
+        : (process.env.NEXT_PUBLIC_PRODUCTION_DOMAIN || 'clientiq.com');
+      const protocol = isDevelopment ? 'http' : 'https';
+      return NextResponse.redirect(new URL(`${protocol}://${mainDomain}`, request.url));
     }
 
-    
+
     if (pathname === '/') {
       // Tenant root -> use tenant-root page to determine redirect
       return NextResponse.rewrite(new URL('/tenant-root', request.url));

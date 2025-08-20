@@ -6,6 +6,44 @@ Proper configuration following django-tenants best practices.
 from pathlib import Path
 import os
 from decouple import config
+from .env_config import Config
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Security Settings
+SECRET_KEY = Config.SECRET_KEY
+DEBUG = Config.DEBUG
+
+# Proper ALLOWED_HOSTS configuration for multi-tenancy
+ALLOWED_HOSTS = Config.get_allowed_hosts_list()
+
+# CORS Settings
+CORS_ALLOW_ALL_ORIGINS = Config.CORS_ALLOW_ALL_ORIGINS
+if not CORS_ALLOW_ALL_ORIGINS:
+    CORS_ALLOWED_ORIGINS = Config.get_cors_allowed_origins_list()
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# Database Configuration
+DATABASES = {
+    'default': Config.get_database_config()
+}
+
+from pathlib import Path
+import os
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -17,16 +55,19 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 # Proper ALLOWED_HOSTS configuration for multi-tenancy
 if DEBUG:
     # Development: Allow localhost and all .localhost subdomains
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.localhost']
+    allowed_hosts_env = config('ALLOWED_HOSTS', default='localhost,127.0.0.1')
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',')]
+    ALLOWED_HOSTS.extend(['.localhost'])  # Allow all subdomains of localhost
 else:
     # Production: Set your actual domain
     ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 
 # CORS Settings
 if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True  # Development only
+    CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=True, cast=bool)
 else:
-    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',')
+    cors_origins = config('CORS_ALLOWED_ORIGINS', default='')
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_HEADERS = [
@@ -226,25 +267,28 @@ REST_FRAMEWORK = {
 # JWT Configuration
 from datetime import timedelta
 
+# JWT Configuration
+from datetime import timedelta
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(seconds=Config.JWT_ACCESS_TOKEN_LIFETIME),
+    'REFRESH_TOKEN_LIFETIME': timedelta(seconds=Config.JWT_REFRESH_TOKEN_LIFETIME),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': Config.JWT_ALGORITHM,
+    'SIGNING_KEY': Config.JWT_SECRET_KEY,
 }
 
 # Email Configuration
-if DEBUG:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
-    EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-    EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-    EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_BACKEND = Config.EMAIL_BACKEND
+if not DEBUG:
+    EMAIL_HOST = Config.EMAIL_HOST
+    EMAIL_PORT = Config.EMAIL_PORT
+    EMAIL_USE_TLS = Config.EMAIL_USE_TLS
+    EMAIL_HOST_USER = Config.EMAIL_HOST_USER
+    EMAIL_HOST_PASSWORD = Config.EMAIL_HOST_PASSWORD
 
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@clientiq.com')
+DEFAULT_FROM_EMAIL = Config.DEFAULT_FROM_EMAIL
 
 # Logging
 LOGGING = {
@@ -257,7 +301,7 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': Config.LOG_LEVEL,
     },
     'loggers': {
         'django_tenants': {
