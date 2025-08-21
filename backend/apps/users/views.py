@@ -14,7 +14,22 @@ class UserListCreateView(generics.ListCreateAPIView):
     """
     permission_classes = [permissions.IsAuthenticated]
     
+    def list(self, request, *args, **kwargs):
+        # Debug authentication and tenant context
+        print(f"DEBUG - Request user: {request.user}")
+        print(f"DEBUG - User authenticated: {request.user.is_authenticated}")
+        print(f"DEBUG - User ID: {getattr(request.user, 'id', 'None')}")
+        print(f"DEBUG - Tenant: {getattr(request, 'tenant', 'None')}")
+        print(f"DEBUG - Authorization header: {request.META.get('HTTP_AUTHORIZATION', 'None')}")
+        
+        return super().list(request, *args, **kwargs)
+    
     def get_queryset(self):
+        # Debug: Print user info
+        print(f"DEBUG - User: {self.request.user}")
+        print(f"DEBUG - User authenticated: {self.request.user.is_authenticated}")
+        print(f"DEBUG - Tenant: {getattr(self.request, 'tenant', None)}")
+        
         # Return users for the current tenant only
         return CustomUser.objects.all()
     
