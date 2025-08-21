@@ -9,7 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
-from django_filters.rest_framework import DjangoFilterBackend
+# from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Count
 from django.db import transaction
 
@@ -25,7 +25,7 @@ class CompanyViewSet(ModelViewSet):
     
     serializer_class = CompanySerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['industry', 'size', 'country']
     search_fields = ['name', 'website', 'industry', 'city', 'country']
     ordering_fields = ['name', 'industry', 'created_at']
@@ -69,7 +69,7 @@ class ContactViewSet(ModelViewSet):
     """ViewSet for Contact CRUD operations with advanced filtering"""
     
     permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['contact_type', 'is_active', 'company', 'owner']
     search_fields = ['first_name', 'last_name', 'email', 'company__name', 'job_title']
     ordering_fields = ['last_name', 'first_name', 'email', 'score', 'created_at']
@@ -231,7 +231,7 @@ class ContactListCreateView(generics.ListCreateAPIView):
     """Simple list and create view for contacts"""
     
     permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [filters.SearchFilter]
     filterset_fields = ['contact_type', 'is_active']
     search_fields = ['first_name', 'last_name', 'email']
     

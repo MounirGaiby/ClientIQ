@@ -4,13 +4,18 @@
   "description": "Development scripts for ClientIQ full-stack application",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && source ../.venv/bin/activate && python manage.py migrate && python manage.py runserver 8000",
-    "dev:frontend": "cd frontend && npm run dev",
-    "setup": "python -m venv .venv && source .venv/bin/activate && pip install -r backend/requirements.txt && cd frontend && npm install",
-    "migrate": "cd backend && source ../.venv/bin/activate && python manage.py migrate",
-    "seed": "cd backend && source ../.venv/bin/activate && python manage.py setup_dev_data",
-    "test:backend": "cd backend && source ../.venv/bin/activate && python manage.py test",
-    "test:frontend": "cd frontend && npm test"
+    "dev:backend": "cd backend && ../.venv/bin/python manage.py runserver 0.0.0.0:8000",
+    "dev:frontend": "cd frontend && PORT=3000 npm run dev",
+    "setup": "npm run migrate && cd frontend && npm install",
+    "migrate": "cd backend && ../.venv/bin/python manage.py migrate",
+    "makemigrations": "cd backend && ../.venv/bin/python manage.py makemigrations",
+    "seed": "cd backend && ../.venv/bin/python manage.py seed",
+    "reset": "cd backend && ../.venv/bin/python manage.py reset",
+    "reset:force": "cd backend && ../.venv/bin/python manage.py reset --force",
+    "test:backend": "cd backend && ../.venv/bin/python manage.py test",
+    "test:frontend": "cd frontend && npm test",
+    "clean": "cd frontend && rm -rf .next node_modules && cd ../backend && find . -name '*.pyc' -delete && find . -name '__pycache__' -type d -exec rm -rf {} +",
+    "install": "cd frontend && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

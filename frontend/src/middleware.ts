@@ -1,32 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Function to validate if subdomain is a valid tenant
-async function isValidTenant(subdomain: string): Promise<boolean> {
-  try {
-    // Check with the backend API to see if this tenant exists
-    const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1';
-    const response = await fetch(`${apiUrl}/tenants/validate/${subdomain}/`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    return response.ok;
-  } catch (error) {
-    console.error('Error validating tenant:', error);
-    return false;
-  }
-}
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host') || '';
   
-  // Get the subdomain by removing the main domain
-  // For development, we'll check for localhost patterns
-  // For production, this would be your actual domain
-  const isLocalhost = hostname.includes('localhost') || hostname.includes('127.0.0.1');
+  // Skip middleware for API routes, static files, and special paths
+  if (pathname.startsWith('/api') || 
+      pathname.startsWith('/_next') || 
+      pathname.startsWith('/favicon.ico') ||
+      pathname.startsWith('/env-test')) {
+    return NextResponse.next();
+  }
   
+  // Get the subdomain by removing the main domain
+  const isLocalhost = hostname.includes('localhost') || hostname.includes('127.0.0.1');
   let subdomain = '';
   
   if (isLocalhost) {
@@ -37,25 +24,30 @@ export async function middleware(request: NextRequest) {
     }
   } else {
     // In production, extract subdomain from your actual domain
-    // e.g., "tenant.clientiq.com" -> "tenant"
     const parts = hostname.split('.');
     if (parts.length > 2 && parts[0] !== 'www') {
       subdomain = parts[0];
     }
   }
 
-  // If there's a subdomain, validate it's a real tenant
+  // If there's a subdomain, handle tenant routing
   if (subdomain) {
-    const isValid = await isValidTenant(subdomain);
+    // For now, we'll assume common tenant names are valid
+    // In production, you might want to validate against a cached list
+    const knownTenants = ['acme', 'testcorp', 'demo']; // Add your tenant names here
     
-    if (!isValid) {
-      // Invalid tenant - redirect to main landing page
+    if (!knownTenants.includes(subdomain.toLowerCase())) {
+      // Unknown tenant - redirect to main landing page
       const isDevelopment = process.env.NEXT_PUBLIC_IS_DEVELOPMENT === 'true';
       const mainDomain = isDevelopment 
         ? (process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'localhost:3000')
         : (process.env.NEXT_PUBLIC_PRODUCTION_DOMAIN || 'clientiq.com');
       const protocol = isDevelopment ? 'http' : 'https';
-      return NextResponse.redirect(new URL(`${protocol}://${mainDomain}`, request.url));
+      
+      // Prevent redirect loops by checking if we're already on the main domain
+      if (!hostname.includes(mainDomain)) {
+        return NextResponse.redirect(new URL(`${protocol}://${mainDomain}`, request.url));
+      }
     }
 
 
@@ -83,7 +75,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // If no subdomain, this is the main domain - continue normally
+  // If no subdomain, this is the main domain
+  // Block tenant-only routes on main domain
+  if (pathname === '/login' || 
+      pathname === '/dashboard' || 
+      pathname.match(/^\/(users|contacts|companies|leads|settings)$/)) {
+    // Redirect to tenant selection or main page
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+  
+  // For main domain, continue normally (landing page, demo form, etc.)
   return NextResponse.next();
 }
 

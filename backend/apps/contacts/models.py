@@ -276,6 +276,8 @@ class Contact(models.Model):
         CustomUser,
         on_delete=models.CASCADE,
         related_name='owned_contacts',
+        null=True,
+        blank=True,
         help_text="User who owns this contact"
     )
 
@@ -350,6 +352,8 @@ class ContactTag(models.Model):
     created_by = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name='contact_tags_created'
     )
 
@@ -375,13 +379,17 @@ class ContactTagAssignment(models.Model):
     contact = models.ForeignKey(
         Contact,
         on_delete=models.CASCADE,
-        related_name='tag_assignments'
+        related_name='tag_assignments',
+        null=True,
+        default=None
     )
     
     tag = models.ForeignKey(
         ContactTag,
         on_delete=models.CASCADE,
-        related_name='contact_assignments'
+        related_name='contact_assignments',
+        null=True,
+        default=None
     )
     
     assigned_at = models.DateTimeField(
@@ -391,6 +399,8 @@ class ContactTagAssignment(models.Model):
     assigned_by = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name='tag_assignments_made'
     )
 

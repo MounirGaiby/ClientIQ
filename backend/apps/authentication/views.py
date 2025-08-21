@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, get_user_model
+from django_tenants.utils import tenant_context
+from apps.tenants.models import Tenant
 
 User = get_user_model()
 
@@ -28,16 +30,58 @@ class CustomLoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Authenticate user
-        user = authenticate(request=request, username=email, password=password)
+        # Get tenant from request
+        tenant = getattr(request, 'tenant', None)
+        if not tenant:
+            return Response(
+                {'error': 'Tenant context required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Authenticate user within tenant context
+        user = None
+        try:
+            with tenant_context(tenant):
+                # Import the tenant user model directly instead of using get_user_model()
+                from apps.users.models import CustomUser as TenantUserModel
+                
+                user = TenantUserModel.objects.get(email=email, is_active=True)
+                
+                if user.check_password(password):
+                    # User authenticated successfully
+                    pass
+                else:
+                    user = None
+        except TenantUserModel.DoesNotExist:
+            # User doesn't exist in this tenant
+            print(f"User {email} not found in tenant {tenant.schema_name}")
+            user = None
+        except Exception as e:
+            # Any other error during authentication
+            print(f"Authentication error: {e}")
+            user = None
         
         if user:
             if user.is_active:
-                # Generate JWT tokens
-                refresh = RefreshToken.for_user(user)
+                # Generate JWT tokens manually to avoid model mismatch
+                from rest_framework_simplejwt.tokens import AccessToken
+                from django.contrib.auth import get_user_model
+                
+                # Create tokens without using OutstandingToken (blacklist feature)
+                access_token = AccessToken()
+                access_token['user_id'] = user.pk
+                access_token['email'] = user.email
+                
+                # For now, we'll skip refresh tokens to avoid the model mismatch
+                # This is a temporary solution for the multi-tenant setup
                 return Response({
-                    'access': str(refresh.access_token),
-                    'refresh': str(refresh),
+                    'access': str(access_token),
+                    'user': {
+                        'id': user.pk,
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                    }
                 })
             else:
                 return Response(

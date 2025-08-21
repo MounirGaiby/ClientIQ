@@ -45,8 +45,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // API base URL - in production this would come from environment variables
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  // Get the correct API base URL based on current subdomain
+  const getApiBaseUrl = useCallback(() => {
+    const subdomain = getCurrentSubdomain();
+    if (subdomain) {
+      // For tenant subdomains, use the tenant-specific API URL
+      return `http://${subdomain}.localhost:8000`;
+    }
+    // For main domain, use the regular API URL
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  }, []);
 
   // Get current tenant subdomain
   const getCurrentSubdomain = () => {
@@ -65,13 +73,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Make API request with proper tenant headers
   const makeApiRequest = async (url: string, options: RequestInit = {}) => {
     const subdomain = getCurrentSubdomain();
+    const apiBaseUrl = getApiBaseUrl();
     const headers = {
       'Content-Type': 'application/json',
       ...(subdomain && { 'Host': `${subdomain}.localhost` }),
       ...options.headers,
     };
 
-    return fetch(`${API_BASE_URL}${url}`, {
+    return fetch(`${apiBaseUrl}${url}`, {
       ...options,
       headers,
     });
@@ -80,7 +89,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const fetchUserInfo = useCallback(async (authToken: string): Promise<boolean> => {
     try {
       const subdomain = getCurrentSubdomain();
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/me/`, {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/api/v1/auth/me/`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
@@ -105,7 +115,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       logout();
       return false;
     }
-  }, [API_BASE_URL]);
+  }, [getApiBaseUrl]);
 
   useEffect(() => {
     // Check for existing token on page load
@@ -124,7 +134,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true);
       
       const subdomain = getCurrentSubdomain();
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/login/`, {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/api/v1/auth/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +182,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!storedRefreshToken) return false;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh/`, {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/api/v1/auth/refresh/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
