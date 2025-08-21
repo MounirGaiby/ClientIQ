@@ -9,11 +9,15 @@ export const getBaseURL = () => {
     const hostname = window.location.hostname;
     const parts = hostname.split('.');
     
-    // If it's localhost or has a subdomain
-    if (hostname === 'localhost' || parts.length > 2) {
+    // If it's localhost with subdomain like acme.localhost:5173
+    if (hostname.includes('localhost') && parts.length > 1) {
       if (parts[0] !== 'localhost' && parts[0] !== 'www') {
         return parts[0];
       }
+    }
+    // For localhost:5173 format, check if we're on a tenant subdomain
+    if (hostname.includes('.localhost')) {
+      return hostname.split('.')[0];
     }
     return null;
   };
@@ -39,10 +43,15 @@ export const getAuthHeader = () => {
     const hostname = window.location.hostname;
     const parts = hostname.split('.');
     
-    if (hostname === 'localhost' || parts.length > 2) {
+    // If it's localhost with subdomain like acme.localhost:5173
+    if (hostname.includes('localhost') && parts.length > 1) {
       if (parts[0] !== 'localhost' && parts[0] !== 'www') {
         return parts[0];
       }
+    }
+    // For localhost:5173 format, check if we're on a tenant subdomain
+    if (hostname.includes('.localhost')) {
+      return hostname.split('.')[0];
     }
     return null;
   };
