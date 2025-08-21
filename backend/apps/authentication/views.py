@@ -1,6 +1,3 @@
-"""
-Views for authentication app.
-"""
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -15,10 +12,7 @@ User = get_user_model()
 
 
 class CustomLoginView(APIView):
-    """
-    Custom login view that handles email-based authentication.
-    """
-    permission_classes = []  # Allow unauthenticated access
+    permission_classes = []
     
     def post(self, request):
         email = request.data.get('email')
@@ -30,7 +24,6 @@ class CustomLoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Get tenant from request
         tenant = getattr(request, 'tenant', None)
         if not tenant:
             return Response(

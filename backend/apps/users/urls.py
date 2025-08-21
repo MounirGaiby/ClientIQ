@@ -11,3 +11,4 @@ urlpatterns = [
     path('<int:pk>/', views.UserDetailView.as_view(), name='user-detail'),
     path('me/', views.CurrentUserDetailView.as_view(), name='current-user'),
 ]
+                                                        

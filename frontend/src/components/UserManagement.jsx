@@ -30,7 +30,6 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Form state
   const [formData, setFormData] = useState({
     email: '',
     first_name: '',
@@ -42,7 +41,6 @@ const UserManagement = () => {
     is_admin: false
   });
 
-  // Load users on component mount
   useEffect(() => {
     loadUsers();
   }, []);
@@ -68,7 +66,6 @@ const UserManagement = () => {
     }
   };
 
-  // Refresh data when filters change
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (!loading) {
@@ -113,7 +110,7 @@ const UserManagement = () => {
       email: user.email,
       first_name: user.first_name,
       last_name: user.last_name,
-      password: '', // Don't prefill password
+      password: '',
       phone_number: user.phone_number || '',
       department: user.department || '',
       job_title: user.job_title || '',
@@ -127,9 +124,9 @@ const UserManagement = () => {
     try {
       const updateData = { ...formData };
       if (!updateData.password) {
-        delete updateData.password; // Don't send empty password
+        delete updateData.password;
       }
-      delete updateData.email; // Email typically can't be changed
+      delete updateData.email;
       
       await updateUser(selectedUser.id, updateData);
       setShowEditModal(false);
@@ -253,7 +250,6 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
           <p className="text-red-400">{error}</p>
@@ -379,7 +375,6 @@ const UserManagement = () => {
         )}
       </div>
 
-      {/* Create User Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-800 rounded-lg border border-slate-700 w-full max-w-md">
@@ -497,7 +492,6 @@ const UserManagement = () => {
         </div>
       )}
 
-      {/* Edit User Modal */}
       {showEditModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-800 rounded-lg border border-slate-700 w-full max-w-md">
@@ -615,7 +609,6 @@ const UserManagement = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-800 rounded-lg border border-slate-700 w-full max-w-md">

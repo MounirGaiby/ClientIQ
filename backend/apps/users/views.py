@@ -1,6 +1,3 @@
-"""
-Views for users app.
-"""
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 
@@ -9,13 +6,9 @@ from .serializers import UserSerializer, UserCreateSerializer, UserUpdateSeriali
 
 
 class UserListCreateView(generics.ListCreateAPIView):
-    """
-    List all users in the current tenant or create a new one.
-    """
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        # Return users for the current tenant only
         return CustomUser.objects.all()
     
     def get_serializer_class(self):
@@ -25,9 +18,6 @@ class UserListCreateView(generics.ListCreateAPIView):
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Retrieve, update or delete a user.
-    """
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
@@ -40,9 +30,6 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class CurrentUserDetailView(generics.RetrieveUpdateAPIView):
-    """
-    Get or update current user's information.
-    """
     permission_classes = [permissions.IsAuthenticated]
     
     def get_object(self):

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LogOut, 
   Users, 
   ContactIcon, 
   BarChart3, 
-  Settings,
+  Settings as SettingsIcon,
   Menu,
   X,
   Plus,
@@ -21,10 +22,36 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
-  const [currentTab, setCurrentTab] = useState(activeTab);
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed on all devices
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const [currentTab, setCurrentTab] = useState(() => {
+    const path = location.pathname;
+    if (path === '/users') return 'users';
+    if (path === '/contacts') return 'contacts';
+    if (path === '/analytics') return 'analytics';
+    if (path === '/settings') return 'settings';
+    if (path === '/dashboard') return 'overview';
+    return activeTab;
+  });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const { getCurrentSubdomain } = useTenant();
+
+  useEffect(() => {
+    const getCurrentTabFromUrl = () => {
+      const path = location.pathname;
+      if (path === '/users') return 'users';
+      if (path === '/contacts') return 'contacts';
+      if (path === '/analytics') return 'analytics';
+      if (path === '/settings') return 'settings';
+      if (path === '/dashboard') return 'overview';
+      return activeTab;
+    };
+    
+    const newTab = getCurrentTabFromUrl();
+    setCurrentTab(newTab);
+  }, [location.pathname, activeTab]);
 
   const subdomain = getCurrentSubdomain();
   const tenantName = subdomain ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1) : 'Demo';
@@ -34,7 +61,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
     { name: 'Contacts', id: 'contacts', icon: ContactIcon, current: currentTab === 'contacts' },
     { name: 'Users', id: 'users', icon: Users, current: currentTab === 'users' },
     { name: 'Analytics', id: 'analytics', icon: BarChart3, current: currentTab === 'analytics' },
-    { name: 'Settings', id: 'settings', icon: Settings, current: currentTab === 'settings' },
+    { name: 'Settings', id: 'settings', icon: SettingsIcon, current: currentTab === 'settings' },
   ];
 
   const handleLogout = () => {
@@ -86,7 +113,15 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
                 <button
                   key={item.id}
                   onClick={() => {
-                    setCurrentTab(item.id);
+                    // Navigate to the appropriate route
+                    const routes: Record<string, string> = {
+                      'overview': '/dashboard',
+                      'users': '/users',
+                      'contacts': '/contacts',
+                      'analytics': '/analytics',
+                      'settings': '/settings'
+                    };
+                    navigate(routes[item.id] || '/dashboard');
                     setSidebarOpen(false);
                   }}
                   className={`
@@ -178,11 +213,11 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
         {/* Page Content */}
         <main className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
-            {currentTab === 'overview' && <OverviewView />}
-            {currentTab === 'contacts' && <ContactsView />}
+            {currentTab === 'overview' && <Overview />}
+            {currentTab === 'contacts' && <Contacts />}
             {currentTab === 'users' && <UserManagement />}
-            {currentTab === 'analytics' && <AnalyticsView />}
-            {currentTab === 'settings' && <SettingsView />}
+            {currentTab === 'analytics' && <Analytics />}
+            {currentTab === 'settings' && <Settings />}
           </div>
         </main>
       </div>
@@ -190,11 +225,9 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
   );
 };
 
-// Overview Component
-const OverviewView: React.FC = () => {
+const Overview = () => {
   return (
     <div className="space-y-6">
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Contacts"
@@ -255,8 +288,7 @@ const OverviewView: React.FC = () => {
   );
 };
 
-// Contacts Component
-const ContactsView: React.FC = () => {
+const Contacts = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -281,8 +313,7 @@ const ContactsView: React.FC = () => {
   );
 };
 
-// Analytics Component
-const AnalyticsView: React.FC = () => {
+const Analytics = () => {
   return (
     <div className="space-y-6">
       <h3 className="text-2xl font-bold text-white">Analytics</h3>
@@ -298,8 +329,7 @@ const AnalyticsView: React.FC = () => {
   );
 };
 
-// Settings Component
-const SettingsView: React.FC = () => {
+const Settings = () => {
   return (
     <div className="space-y-6">
       <h3 className="text-2xl font-bold text-white">Settings</h3>

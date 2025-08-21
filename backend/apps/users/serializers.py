@@ -3,13 +3,9 @@ from .models import CustomUser
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """
-    Serializer for user data (read operations).
-    """
     full_name = serializers.SerializerMethodField()
     
     def get_full_name(self, obj):
-        """Return the full name of the user."""
         return f"{obj.first_name} {obj.last_name}".strip() if obj.first_name or obj.last_name else ""
     
     class Meta:
@@ -23,9 +19,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    """
-    Serializer for user creation.
-    """
     password = serializers.CharField(write_only=True, min_length=8)
     
     class Meta:
@@ -44,10 +37,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
-    """
-    Serializer for user updates.
-    """
-    
     class Meta:
         model = CustomUser
         fields = [
