@@ -449,7 +449,7 @@ class Command(BaseCommand):
         self.stdout.write(f'   Email: {tenant_admin_creds["email"]}')
         self.stdout.write(f'   Password: {tenant_admin_creds["password"]}')
         self.stdout.write('   Access: Full tenant permissions, All CRM features')
-        self.stdout.write('   URL: http://acme.localhost:3000/')
+        self.stdout.write('   URL: http://acme.localhost:5173/')
         
         self.stdout.write('\n📋 OTHER TENANT USERS:')
         self.stdout.write('   manager@acme.com / manager123 (Sales Manager)')
@@ -460,7 +460,7 @@ class Command(BaseCommand):
         
         self.stdout.write('\n🌐 ACCESS URLS:')
         self.stdout.write('   Platform: http://localhost:8000/admin/')
-        self.stdout.write('   Tenant: http://acme.localhost:3000/')
+        self.stdout.write('   Tenant: http://acme.localhost:5173/')
         self.stdout.write('   API: http://localhost:8000/api/v1/')
         
         self.stdout.write('\n' + '='*60)

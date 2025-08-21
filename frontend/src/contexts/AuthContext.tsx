@@ -1,140 +1,77 @@
-'use client';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { useTenant } from './TenantContext'
 
-import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
-
-export interface User {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  is_staff: boolean;
-  is_superuser: boolean;
-  tenant?: {
-    id: string;
-    name: string;
-    domain: string;
-  };
+interface User {
+  id: number
+  email: string
+  first_name: string
+  last_name: string
 }
 
 interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
-  isLoading: boolean;
-  refreshToken: () => Promise<boolean>;
-  makeApiRequest: (url: string, options?: RequestInit) => Promise<Response>;
+  user: User | null
+  token: string | null
+  isLoading: boolean
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  logout: () => void
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const { getTenantApiUrl, getCurrentSubdomain } = useTenant()
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Get the correct API base URL based on current subdomain
-  const getApiBaseUrl = useCallback(() => {
-    const subdomain = getCurrentSubdomain();
-    if (subdomain) {
-      // For tenant subdomains, use the tenant-specific API URL
-      return `http://${subdomain}.localhost:8000`;
+  useEffect(() => {
+    // Check for existing token on page load
+    const storedToken = localStorage.getItem('auth_token')
+    if (storedToken) {
+      setToken(storedToken)
+      fetchUserInfo(storedToken)
+    } else {
+      setIsLoading(false)
     }
-    // For main domain, use the regular API URL
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  }, []);
+  }, [])
 
-  // Get current tenant subdomain
-  const getCurrentSubdomain = () => {
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const parts = hostname.split('.');
-      if (parts.length > 1 && parts[0] !== 'www' && parts[0] !== 'localhost') {
-        return parts[0];
-      } else if (hostname.includes('localhost') && parts.length > 1) {
-        return parts[0];
-      }
-    }
-    return null;
-  };
-
-  // Make API request with proper tenant headers
-  const makeApiRequest = async (url: string, options: RequestInit = {}) => {
-    const subdomain = getCurrentSubdomain();
-    const apiBaseUrl = getApiBaseUrl();
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(subdomain && { 'Host': `${subdomain}.localhost` }),
-      ...options.headers,
-    };
-
-    return fetch(`${apiBaseUrl}${url}`, {
-      ...options,
-      headers,
-    });
-  };
-
-  const fetchUserInfo = useCallback(async (authToken: string): Promise<boolean> => {
+  const fetchUserInfo = async (authToken: string): Promise<boolean> => {
     try {
-      const subdomain = getCurrentSubdomain();
-      const apiBaseUrl = getApiBaseUrl();
+      const subdomain = getCurrentSubdomain()
+      const apiBaseUrl = getTenantApiUrl()
+      
       const response = await fetch(`${apiBaseUrl}/api/v1/auth/me/`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
           ...(subdomain && { 'Host': `${subdomain}.localhost` }),
         },
-      });
+      })
 
       if (response.ok) {
-        const result = await response.json();
-        // Handle Django's response format
-        const userData = result.data || result;
-        setUser(userData);
-        setIsLoading(false);
-        return true;
+        const result = await response.json()
+        const userData = result.data || result
+        setUser(userData)
+        setIsLoading(false)
+        return true
       } else {
-        // Token is invalid
-        logout();
-        return false;
+        logout()
+        return false
       }
     } catch (error) {
-      console.error('Error fetching user info:', error);
-      logout();
-      return false;
+      console.error('Error fetching user info:', error)
+      logout()
+      return false
     }
-  }, [getApiBaseUrl]);
-
-  useEffect(() => {
-    // Check for existing token on page load
-    const storedToken = localStorage.getItem('auth_token');
-    if (storedToken) {
-      setToken(storedToken);
-      // Verify token is still valid by fetching user info
-      fetchUserInfo(storedToken);
-    } else {
-      setIsLoading(false);
-    }
-  }, [fetchUserInfo]);
+  }
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      setIsLoading(true);
+      setIsLoading(true)
       
-      const subdomain = getCurrentSubdomain();
-      const apiBaseUrl = getApiBaseUrl();
+      const subdomain = getCurrentSubdomain()
+      const apiBaseUrl = getTenantApiUrl()
+      
       const response = await fetch(`${apiBaseUrl}/api/v1/auth/login/`, {
         method: 'POST',
         headers: {
@@ -142,80 +79,60 @@ export function AuthProvider({ children }: AuthProviderProps) {
           ...(subdomain && { 'Host': `${subdomain}.localhost` }),
         },
         body: JSON.stringify({ email, password }),
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (response.ok) {
-        // Django returns 'access' not 'access_token'
-        const { access, refresh } = data;
-        setToken(access);
-        localStorage.setItem('auth_token', access);
-        localStorage.setItem('refresh_token', refresh);
+        const { access, user: userData } = data
+        setToken(access)
+        setUser(userData)
+        localStorage.setItem('auth_token', access)
         
-        // Fetch user info with the new token
-        await fetchUserInfo(access);
-        
-        setIsLoading(false);
-        return { success: true };
+        setIsLoading(false)
+        return { success: true }
       } else {
-        setIsLoading(false);
-        return { success: false, error: data.detail || data.message || 'Login failed' };
+        setIsLoading(false)
+        return { 
+          success: false, 
+          error: data.error || 'Invalid email or password' 
+        }
       }
     } catch (error) {
-      console.error('Login error:', error);
-      setIsLoading(false);
-      return { success: false, error: 'Network error. Please check if the backend server is running.' };
+      setIsLoading(false)
+      return { 
+        success: false, 
+        error: 'Network error. Please try again.' 
+      }
     }
-  };
+  }
 
   const logout = () => {
-    setUser(null);
-    setToken(null);
-    setIsLoading(false);
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('refresh_token');
-  };
+    setUser(null)
+    setToken(null)
+    setIsLoading(false)
+    localStorage.removeItem('auth_token')
+  }
 
-  const refreshToken = async (): Promise<boolean> => {
-    const storedRefreshToken = localStorage.getItem('refresh_token');
-    if (!storedRefreshToken) return false;
-
-    try {
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/api/v1/auth/refresh/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refresh: storedRefreshToken }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setToken(data.access);
-        localStorage.setItem('auth_token', data.access);
-        return true;
-      } else {
-        logout();
-        return false;
-      }
-    } catch (error) {
-      console.error('Error refreshing token:', error);
-      logout();
-      return false;
-    }
-  };
-
-  const value: AuthContextType = {
+  const value = {
     user,
     token,
-    login,
-    logout,
     isLoading,
-    refreshToken,
-    makeApiRequest,
-  };
+    login,
+    logout
+  }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
 }

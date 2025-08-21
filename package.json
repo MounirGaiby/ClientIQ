@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && ../.venv/bin/python manage.py runserver 0.0.0.0:8000",
-    "dev:frontend": "cd frontend && PORT=3000 npm run dev",
+    "dev:frontend": "cd frontend && npm run dev -- --host --port 5173",
     "setup": "npm run migrate && cd frontend && npm install",
     "migrate": "cd backend && ../.venv/bin/python manage.py migrate",
     "makemigrations": "cd backend && ../.venv/bin/python manage.py makemigrations",
@@ -23,5 +23,9 @@
   "engines": {
     "node": ">=18.0.0",
     "python": ">=3.8"
+  },
+  "dependencies": {
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7"
   }
 }

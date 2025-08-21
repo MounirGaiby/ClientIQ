@@ -19,7 +19,7 @@ class Config:
     # Domain Configuration
     MAIN_DOMAIN = config('MAIN_DOMAIN', default='localhost')
     PRODUCTION_DOMAIN = config('PRODUCTION_DOMAIN', default='clientiq.com')
-    FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+    FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
     
     # Database Configuration
     DATABASE_URL = config('DATABASE_URL', default='')
