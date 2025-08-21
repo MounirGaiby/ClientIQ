@@ -29,7 +29,13 @@ A modern multi-tenant CRM application built with Django and React.
    ```bash
    cd backend
    python manage.py migrate
-   python manage.py seed_legacy
+   python manage.py seed
+   ```
+
+   *Optional: To reset and recreate the database:*
+   
+   ```bash
+   python manage.py reset
    ```
 
 4. **Start development servers**
