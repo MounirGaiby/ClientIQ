@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
+import UserManagement from '../components/UserManagement';
 
 interface DashboardProps {
   activeTab?: string;
@@ -179,7 +180,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
           <div className="max-w-7xl mx-auto">
             {currentTab === 'overview' && <OverviewView />}
             {currentTab === 'contacts' && <ContactsView />}
-            {currentTab === 'users' && <UsersView />}
+            {currentTab === 'users' && <UserManagement />}
             {currentTab === 'analytics' && <AnalyticsView />}
             {currentTab === 'settings' && <SettingsView />}
           </div>
@@ -273,32 +274,6 @@ const ContactsView: React.FC = () => {
           <p className="text-gray-300 mb-6">Get started by adding your first contact.</p>
           <button className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-6 py-3 rounded-lg font-semibold shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all duration-200">
             Add Your First Contact
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Users Component
-const UsersView: React.FC = () => {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-2xl font-bold text-white">Team Members</h3>
-        <button className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-lg font-semibold shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all duration-200 flex items-center">
-          <Plus className="h-4 w-4 mr-2" />
-          Invite User
-        </button>
-      </div>
-      
-      <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-xl border border-orange-500/20 rounded-2xl p-8 shadow-2xl shadow-orange-500/10">
-        <div className="text-center py-12">
-          <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">Just you for now</h3>
-          <p className="text-gray-300 mb-6">Invite team members to collaborate on your workspace.</p>
-          <button className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-6 py-3 rounded-lg font-semibold shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all duration-200">
-            Invite Team Member
           </button>
         </div>
       </div>
