@@ -58,6 +58,14 @@ A modern multi-tenant CRM application built with Django and React.
 
 See [docs/architecture.md](docs/architecture.md) for detailed documentation.
 
+## 📚 Documentation
+
+- **[🚀 Getting Started](docs/getting-started.md)** - Quick setup guide
+- **[🏗️ Architecture](docs/architecture.md)** - System design and multi-tenant setup  
+- **[🔗 API Reference](docs/api.md)** - Complete API endpoints and parameters
+- **[🧪 Testing](docs/testing.md)** - Running tests and development workflows
+- **[🚀 Deployment](docs/deployment.md)** - Production deployment guide
+
 ## Features
 
 - Multi-tenant architecture

@@ -29,8 +29,7 @@ token.json
 .workspace/
 .idea/
 
-# Documentation (keep only README.md)
-docs/
+# Documentation
 instructions/
 
 # C extensions
