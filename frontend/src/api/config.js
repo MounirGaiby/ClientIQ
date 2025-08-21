@@ -31,7 +31,7 @@ export const getBaseURL = () => {
 
 // Get authentication headers
 export const getAuthHeader = () => {
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('auth_token');
   const headers = {};
   
   if (token) {
