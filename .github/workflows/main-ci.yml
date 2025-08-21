@@ -45,7 +45,7 @@ jobs:
       run: |
         cd backend
         echo "🧪 Running working tests..."
-        python run_working_tests.py
+        python manage.py test
         echo "✅ Tests passed"
     
   # Gate for merging
