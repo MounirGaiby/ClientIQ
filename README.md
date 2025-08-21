@@ -29,7 +29,7 @@ A modern multi-tenant CRM application built with Django and React.
    ```bash
    cd backend
    python manage.py migrate
-   python manage.py loaddata fixtures/initial_data.json
+   python manage.py seed_legacy
    ```
 
 4. **Start development servers**
@@ -39,14 +39,14 @@ A modern multi-tenant CRM application built with Django and React.
    ```
 
 5. **Access the application**
-   - Main site: http://localhost:5173
-   - Tenant example: http://acme.localhost:5173
+   - Main site: <http://localhost:5173>
+   - Tenant example: <http://acme.localhost:5173>
    - Login with: admin@acme.com / admin123
 
 ## Default Tenants
 
-- **ACME Corp**: acme.localhost:5173 (admin@acme.com / admin123)
-- **Demo Company**: demo.localhost:5173 (admin@demo.com / admin123)
+- **ACME Corp**: `acme.localhost:5173` (admin@acme.com / admin123)
+- **Demo Company**: `demo.localhost:5173` (admin@demo.com / admin123)
 
 ## Project Structure
 
