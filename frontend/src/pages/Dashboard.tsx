@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
 import UserManagement from '../components/UserManagement';
+import ContactManagement from '../components/ContactManagement';
 
 interface DashboardProps {
   activeTab?: string;
@@ -173,38 +174,27 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
         {/* Top Bar */}
         <div className="sticky top-0 z-30 bg-slate-900/80 backdrop-blur-xl border-b border-orange-500/20 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center">
               <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 text-gray-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200"
-                title="Toggle sidebar"
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
               >
                 <Menu className="h-6 w-6" />
               </button>
               
-              <div>
-                <h2 className="text-xl font-semibold text-white capitalize">
-                  {currentTab}
-                </h2>
-                <p className="text-orange-300 text-sm">
-                  Welcome back to your dashboard
-                </p>
+              <div className="hidden sm:flex items-center ml-4 lg:ml-0">
+                <Search className="h-5 w-5 text-gray-400 mr-3" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="bg-slate-800/50 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent w-64"
+                />
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="pl-10 pr-4 py-2 bg-slate-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent backdrop-blur-sm"
-                />
-              </div>
-              
-              <button className="relative p-2 text-gray-400 hover:text-white transition-colors">
+              <button className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
                 <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full shadow-lg shadow-orange-500/50"></span>
               </button>
             </div>
           </div>
@@ -214,7 +204,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
         <main className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             {currentTab === 'overview' && <Overview />}
-            {currentTab === 'contacts' && <Contacts />}
+            {currentTab === 'contacts' && <ContactManagement />}
             {currentTab === 'users' && <UserManagement />}
             {currentTab === 'analytics' && <Analytics />}
             {currentTab === 'settings' && <Settings />}
@@ -288,31 +278,6 @@ const Overview = () => {
   );
 };
 
-const Contacts = () => {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-2xl font-bold text-white">Contacts</h3>
-        <button className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-lg font-semibold shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all duration-200 flex items-center">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Contact
-        </button>
-      </div>
-      
-      <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-xl border border-orange-500/20 rounded-2xl p-8 shadow-2xl shadow-orange-500/10">
-        <div className="text-center py-12">
-          <ContactIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">No contacts yet</h3>
-          <p className="text-gray-300 mb-6">Get started by adding your first contact.</p>
-          <button className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-6 py-3 rounded-lg font-semibold shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all duration-200">
-            Add Your First Contact
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const Analytics = () => {
   return (
     <div className="space-y-6">
@@ -339,7 +304,9 @@ const Settings = () => {
           <h4 className="text-lg font-semibold text-white mb-4">Account Settings</h4>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Organization Name</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Organization Name
+              </label>
               <input
                 type="text"
                 className="w-full px-4 py-2 bg-slate-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
