@@ -136,6 +136,7 @@ if USE_MULTI_TENANCY:
         'django.contrib.sessions',
         'apps.users',     # Tenant users
         'apps.contacts',  # Tenant data
+        'apps.opportunities',
     ]
     
     INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
@@ -183,6 +184,8 @@ else:
         'apps.authentication',
         'apps.tenants',
         'apps.platform',
+        'django_filters',
+        "apps.opportunities",
     ]
     
     MIDDLEWARE = [

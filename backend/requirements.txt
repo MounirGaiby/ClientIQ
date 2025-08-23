@@ -21,6 +21,9 @@ python-decouple==3.8
 # Production server
 gunicorn==21.2.0
 
+# Filtering (NEW)
+django-filter>=23.0.0
+
 # Optional: Redis support
 django-redis==5.4.0
 
