@@ -17,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
 import UserManagement from '../components/UserManagement';
 import ContactManagement from '../components/ContactManagement';
+import PipelineManagement from '../components/PipelineManagement';
 
 interface DashboardProps {
   activeTab?: string;
@@ -44,6 +45,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
       const path = location.pathname;
       if (path === '/users') return 'users';
       if (path === '/contacts') return 'contacts';
+      if (path === '/pipeline') return 'pipeline';
       if (path === '/analytics') return 'analytics';
       if (path === '/settings') return 'settings';
       if (path === '/dashboard') return 'overview';
@@ -59,6 +61,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
 
   const navigation = [
     { name: 'Overview', id: 'overview', icon: Home, current: currentTab === 'overview' },
+    { name: 'Pipeline', id: 'pipeline', icon: BarChart3, current: currentTab === 'pipeline' },
     { name: 'Contacts', id: 'contacts', icon: ContactIcon, current: currentTab === 'contacts' },
     { name: 'Users', id: 'users', icon: Users, current: currentTab === 'users' },
     { name: 'Analytics', id: 'analytics', icon: BarChart3, current: currentTab === 'analytics' },
@@ -117,6 +120,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
                     // Navigate to the appropriate route
                     const routes: Record<string, string> = {
                       'overview': '/dashboard',
+                      'pipeline': '/pipeline',
                       'users': '/users',
                       'contacts': '/contacts',
                       'analytics': '/analytics',
@@ -205,6 +209,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
           <div className="max-w-7xl mx-auto">
             {currentTab === 'overview' && <Overview />}
             {currentTab === 'contacts' && <ContactManagement />}
+            {currentTab === 'pipeline' && <PipelineManagement />}
             {currentTab === 'users' && <UserManagement />}
             {currentTab === 'analytics' && <Analytics />}
             {currentTab === 'settings' && <Settings />}

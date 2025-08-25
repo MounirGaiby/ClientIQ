@@ -24,29 +24,37 @@ function App() {
                 <>
                   <Route path="/" element={<LoginPage />} />
                   <Route path="/login" element={<LoginPage />} />
-                  <Route 
-                    path="/dashboard" 
+                  <Route
+                    path="/dashboard"
                     element={
                       <ProtectedRoute>
                         <Dashboard />
                       </ProtectedRoute>
-                    } 
+                    }
                   />
-                  <Route 
-                    path="/users" 
+                  <Route
+                    path="/users"
                     element={
                       <ProtectedRoute>
                         <Dashboard activeTab="users" />
                       </ProtectedRoute>
-                    } 
+                    }
                   />
-                  <Route 
-                    path="/contacts" 
+                  <Route
+                    path="/contacts"
                     element={
                       <ProtectedRoute>
                         <Dashboard activeTab="contacts" />
                       </ProtectedRoute>
-                    } 
+                    }
+                  />
+                  <Route
+                    path="/pipeline"
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard activeTab="pipeline" />
+                      </ProtectedRoute>
+                    }
                   />
                 </>
               ) : (

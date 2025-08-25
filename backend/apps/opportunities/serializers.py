@@ -211,6 +211,12 @@ class OpportunityCreateUpdateSerializer(serializers.ModelSerializer):
                 "Expected close date cannot be in the past."
             )
         return value
+    
+    def get_tenant_user(self, request):
+        try:
+            return CustomUser.objects.get(email=request.user.email)
+        except CustomUser.DoesNotExist:
+            return None
 
     def create(self, validated_data):
         """Create opportunity with proper relationships."""
@@ -226,12 +232,13 @@ class OpportunityCreateUpdateSerializer(serializers.ModelSerializer):
         owner = CustomUser.objects.get(id=owner_id)
         
         # Create opportunity
+        tenant_user = self.get_tenant_user(self.context['request'])
         opportunity = Opportunity.objects.create(
             contact=contact,
             company=company,
             stage=stage,
             owner=owner,
-            created_by=self.context['request'].user,
+            created_by=tenant_user,
             **validated_data
         )
         
@@ -242,7 +249,7 @@ class OpportunityCreateUpdateSerializer(serializers.ModelSerializer):
             new_stage=stage,
             new_value=opportunity.value,
             new_probability=opportunity.probability,
-            changed_by=self.context['request'].user,
+            changed_by=tenant_user,
             notes=f"Opportunity created in stage: {stage.name}"
         )
         

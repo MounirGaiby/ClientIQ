@@ -13,5 +13,7 @@ router.register(r'opportunities', views.OpportunityViewSet, basename='opportunit
 app_name = 'opportunities'
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
+    path('pipeline/', views.OpportunityViewSet.as_view({'get': 'pipeline'}), name='pipeline'),
+    path('analytics/', views.OpportunityViewSet.as_view({'get': 'analytics'}), name='analytics'),
 ]

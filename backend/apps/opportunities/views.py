@@ -12,6 +12,8 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
 
+from apps.users.models import CustomUser
+
 from .models import SalesStage, Opportunity, OpportunityHistory
 from .serializers import (
     SalesStageSerializer,
@@ -52,9 +54,16 @@ class SalesStageViewSet(viewsets.ModelViewSet):
             return SalesStageCreateSerializer
         return SalesStageSerializer
     
+    def get_tenant_user(self, request):
+        try:
+            return CustomUser.objects.get(email=request.user.email)
+        except CustomUser.DoesNotExist:
+            return None
+    
     def perform_create(self, serializer):
         """Set created_by when creating a stage."""
-        serializer.save(created_by=self.request.user)
+        tenant_user = self.get_tenant_user(self.request)
+        serializer.save(created_by=tenant_user)
     
     @action(detail=False, methods=['post'])
     def create_default_stages(self, request):
@@ -110,9 +119,10 @@ class SalesStageViewSet(viewsets.ModelViewSet):
         
         created_stages = []
         for stage_data in default_stages:
+            tenant_user = self.get_tenant_user(self.request)
             stage, created = SalesStage.objects.get_or_create(
                 name=stage_data['name'],
-                defaults={**stage_data, 'created_by': request.user}
+                defaults={**stage_data, 'created_by': tenant_user}
             )
             if created:
                 created_stages.append(stage)
@@ -191,9 +201,9 @@ class OpportunityViewSet(viewsets.ModelViewSet):
             return OpportunityCreateUpdateSerializer
         return OpportunitySerializer
     
-    def perform_create(self, serializer):
-        """Set created_by when creating an opportunity."""
-        serializer.save(created_by=self.request.user)
+    # def perform_create(self, serializer):
+    #     """Set created_by when creating an opportunity."""
+    #     serializer.save(created_by=self.request.user)
     
     @action(detail=True, methods=['post'])
     def change_stage(self, request, pk=None):
