@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, Calendar, DollarSign, User, Building } from 'lucide-react';
 import { pipelineApi } from '../api/pipeline';
 import { contactsApi } from '../api/contacts';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Contact {
   id: number;
@@ -14,6 +15,13 @@ interface Contact {
     id: number;
     name: string;
   };
+}
+
+interface User {
+  id: number
+  email: string
+  first_name: string
+  last_name: string
 }
 
 interface Company {
@@ -36,6 +44,7 @@ interface OpportunityFormData {
   stage_id: number;
   contact_id: number;
   company_id?: number;
+  owner_id: number;
   expected_close_date: string;
   priority: 'low' | 'medium' | 'high';
 }
@@ -55,6 +64,8 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
   onClose,
   onSave
 }) => {
+  const { user } = useAuth();
+  
   const [formData, setFormData] = useState<OpportunityFormData>({
     name: '',
     description: '',
@@ -63,6 +74,7 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
     stage_id: 1,
     contact_id: 0,
     company_id: undefined,
+    owner_id: user?.id || 0,
     expected_close_date: '',
     priority: 'medium'
   });
@@ -70,6 +82,7 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [stages, setStages] = useState<SalesStage[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -85,6 +98,7 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
           stage_id: opportunity.stage.id,
           contact_id: opportunity.contact.id,
           company_id: opportunity.company?.id,
+          owner_id: opportunity.owner?.id || user?.id || 0,
           expected_close_date: opportunity.expected_close_date,
           priority: opportunity.priority
         });
@@ -98,6 +112,7 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
           stage_id: stages[0]?.id || 1,
           contact_id: 0,
           company_id: undefined,
+          owner_id: user?.id || 0,
           expected_close_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
           priority: 'medium'
         });
@@ -110,12 +125,19 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
       const [contactsData, companiesData, stagesData] = await Promise.all([
         contactsApi.getContacts(),
         contactsApi.getCompanies(),
-        pipelineApi.getStages()
+        pipelineApi.getStages(),
+        // TODO: Add API call to get users for owner selection
+        // For now, include current user in the list
       ]);
       
       setContacts(contactsData.results || contactsData);
       setCompanies(companiesData.results || companiesData);
       setStages(stagesData);
+
+      // ADDED: Set users list (for now just current user, but you should fetch all users)
+      if (user) {
+        setUsers([user]);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -125,7 +147,7 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'value' || name === 'probability' || name === 'stage_id' || name === 'contact_id' || name === 'company_id'
+      [name]: name === 'value' || name === 'probability' || name === 'stage_id' || name === 'contact_id' || name === 'company_id' || name === 'owner_id'
         ? parseInt(value) || 0
         : value
     }));
@@ -150,6 +172,9 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
     }
     if (formData.contact_id <= 0) {
       newErrors.contact_id = 'Contact is required';
+    }
+    if (formData.owner_id <= 0) {
+      newErrors.owner_id = 'Owner is required';
     }
     if (!formData.expected_close_date) {
       newErrors.expected_close_date = 'Expected close date is required';
@@ -275,11 +300,11 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
               onChange={handleInputChange}
               rows={3}
               className="w-full px-4 py-2 bg-slate-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              placeholder="Opportunity description"
+              placeholder="Describe the opportunity..."
             />
           </div>
 
-          {/* Value and Probability */}
+          {/* Value and Probability Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -303,12 +328,7 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Probability % 
-                {selectedStage && (
-                  <span className="text-xs text-gray-400 ml-1">
-                    (Stage default: {selectedStage.probability}%)
-                  </span>
-                )}
+                Probability (%)
               </label>
               <input
                 type="number"
@@ -318,16 +338,71 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
                 min="0"
                 max="100"
                 className="w-full px-4 py-2 bg-slate-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                placeholder="50"
               />
+              {selectedStage && (
+                <p className="mt-1 text-xs text-gray-400">
+                  Stage default: {selectedStage.probability}%
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Stage and Priority */}
+          {/* Contact and Company Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Sales Stage
+                <User className="h-4 w-4 inline mr-1" />
+                Contact *
+              </label>
+              <select
+                name="contact_id"
+                value={formData.contact_id}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 bg-slate-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              >
+                <option value={0}>Select a contact</option>
+                {contacts.map(contact => (
+                  <option key={contact.id} value={contact.id}>
+                    {contact.first_name} {contact.last_name}
+                  </option>
+                ))}
+              </select>
+              {errors.contact_id && (
+                <p className="mt-1 text-sm text-red-400">{errors.contact_id}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Building className="h-4 w-4 inline mr-1" />
+                Company
+              </label>
+              <select
+                name="company_id"
+                value={formData.company_id || ''}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 bg-slate-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              >
+                <option value="">Select a company (optional)</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+              {selectedContact?.company && (
+                <p className="mt-1 text-xs text-gray-400">
+                  Contact's company: {selectedContact.company.name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Stage and Owner Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Sales Stage *
               </label>
               <select
                 name="stage_id"
@@ -343,6 +418,33 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
               </select>
             </div>
 
+            {/* ADDED: Owner Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <User className="h-4 w-4 inline mr-1" />
+                Owner *
+              </label>
+              <select
+                name="owner_id"
+                value={formData.owner_id}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 bg-slate-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              >
+                <option value={0}>Select an owner</option>
+                {users.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.first_name} {user.last_name}
+                  </option>
+                ))}
+              </select>
+              {errors.owner_id && (
+                <p className="mt-1 text-sm text-red-400">{errors.owner_id}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Priority and Expected Close Date Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Priority
@@ -358,74 +460,23 @@ const OpportunityModal: React.FC<OpportunityModalProps> = ({
                 <option value="high">High</option>
               </select>
             </div>
-          </div>
 
-          {/* Contact */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              <User className="h-4 w-4 inline mr-1" />
-              Contact *
-            </label>
-            <select
-              name="contact_id"
-              value={formData.contact_id}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 bg-slate-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              <option value={0}>Select a contact</option>
-              {contacts.map(contact => (
-                <option key={contact.id} value={contact.id}>
-                  {contact.first_name} {contact.last_name} ({contact.email})
-                </option>
-              ))}
-            </select>
-            {errors.contact_id && (
-              <p className="mt-1 text-sm text-red-400">{errors.contact_id}</p>
-            )}
-            {selectedContact && selectedContact.company && (
-              <div className="mt-2 text-xs text-gray-400">
-                Company: {selectedContact.company.name}
-              </div>
-            )}
-          </div>
-
-          {/* Company (Optional) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              <Building className="h-4 w-4 inline mr-1" />
-              Company (Optional)
-            </label>
-            <select
-              name="company_id"
-              value={formData.company_id || ''}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 bg-slate-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              <option value="">Select a company (optional)</option>
-              {companies.map(company => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Expected Close Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              <Calendar className="h-4 w-4 inline mr-1" />
-              Expected Close Date *
-            </label>
-            <input
-              type="date"
-              name="expected_close_date"
-              value={formData.expected_close_date}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 bg-slate-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            />
-            {errors.expected_close_date && (
-              <p className="mt-1 text-sm text-red-400">{errors.expected_close_date}</p>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Calendar className="h-4 w-4 inline mr-1" />
+                Expected Close Date *
+              </label>
+              <input
+                type="date"
+                name="expected_close_date"
+                value={formData.expected_close_date}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 bg-slate-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+              {errors.expected_close_date && (
+                <p className="mt-1 text-sm text-red-400">{errors.expected_close_date}</p>
+              )}
+            </div>
           </div>
 
           {/* Weighted Value Display */}

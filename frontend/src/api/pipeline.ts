@@ -9,6 +9,7 @@ export interface OpportunityFormData {
   stage_id: number;
   contact_id: number;
   company_id?: number;
+  owner_id: number;
   expected_close_date: string;
   priority: 'low' | 'medium' | 'high';
 }
