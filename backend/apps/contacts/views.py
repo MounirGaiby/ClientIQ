@@ -13,6 +13,8 @@ from rest_framework.viewsets import ModelViewSet
 from django.db.models import Q, Count
 from django.db import transaction
 
+from apps.users.models import CustomUser
+
 from .models import Company, Contact, ContactTag, ContactTagAssignment, ContactType
 from .serializers import (
     CompanySerializer, ContactListSerializer, ContactDetailSerializer,
@@ -110,14 +112,22 @@ class ContactViewSet(ModelViewSet):
             return ContactCreateUpdateSerializer
         else:
             return ContactDetailSerializer
+        
+    def get_tenant_user(self, request):
+        try:
+            return CustomUser.objects.get(email=request.user.email)
+        except CustomUser.DoesNotExist:
+            return None
     
     def perform_create(self, serializer):
         """Set created_by when creating a contact"""
-        serializer.save(created_by=self.request.user)
+        tenant_user = self.get_tenant_user(self.request)
+        serializer.save(created_by=tenant_user)
     
     def perform_update(self, serializer):
         """Set updated_by when updating a contact"""
-        serializer.save(updated_by=self.request.user)
+        tenant_user = self.get_tenant_user(self.request)
+        serializer.save(updated_by=tenant_user)
     
     @action(detail=True, methods=['post'])
     def update_score(self, request, pk=None):

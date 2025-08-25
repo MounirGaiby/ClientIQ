@@ -6,6 +6,8 @@ Provides serialization and validation for Contact and Company models.
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+
+from apps.users.models import CustomUser
 from .models import Company, Contact, ContactTag, ContactTagAssignment, ContactType
 
 
@@ -183,16 +185,23 @@ class ContactCreateUpdateSerializer(serializers.ModelSerializer):
             )
         return value
     
+    def get_tenant_user(self, request):
+        try:
+            return CustomUser.objects.get(email=request.user.email)
+        except CustomUser.DoesNotExist:
+            return None
+    
     def create(self, validated_data):
         """Create contact with tags"""
+        tenant_user = self.get_tenant_user(self.context['request'])
         tag_ids = validated_data.pop('tag_ids', [])
         
         # Set owner to current user if not provided
         if 'owner' not in validated_data:
-            validated_data['owner'] = self.context['request'].user
+            validated_data['owner'] = tenant_user
         
         # Set created_by
-        validated_data['created_by'] = self.context['request'].user
+        validated_data['created_by'] = tenant_user
         
         contact = Contact.objects.create(**validated_data)
         
@@ -203,10 +212,11 @@ class ContactCreateUpdateSerializer(serializers.ModelSerializer):
     
     def update(self, instance, validated_data):
         """Update contact with tags"""
+        tenant_user = self.get_tenant_user(self.context['request'])
         tag_ids = validated_data.pop('tag_ids', None)
         
         # Set updated_by
-        validated_data['updated_by'] = self.context['request'].user
+        validated_data['updated_by'] = tenant_user
         
         # Update contact fields
         for attr, value in validated_data.items():
