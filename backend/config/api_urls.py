@@ -18,4 +18,10 @@ urlpatterns = [
     
     # Contact management endpoints
     path('contacts/', include('apps.contacts.urls')),
+
+    # Opportunities and pipeline endpoints
+    path('opportunities/', include('apps.opportunities.urls')),
+    
+    # Activities and follow-up endpoints
+    path('activities/', include('apps.activities.urls')),
 ]

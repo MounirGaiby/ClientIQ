@@ -132,11 +132,22 @@ if USE_MULTI_TENANCY:
     # Apps installed per tenant schema
     TENANT_APPS = [
         'django.contrib.contenttypes',
+        'django.contrib.admin',
         'django.contrib.auth',
         'django.contrib.sessions',
+        'django.contrib.messages',
+        'django.contrib.staticfiles',
+
+        # Third-party apps
+        'rest_framework',
+        'rest_framework_simplejwt',
+        'corsheaders',
+
+        # Local apps
         'apps.users',     # Tenant users
         'apps.contacts',  # Tenant data
         'apps.opportunities',
+        'apps.activities',
     ]
     
     INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
@@ -284,6 +295,7 @@ SIMPLE_JWT = {
 
 # Email Configuration
 EMAIL_BACKEND = Config.EMAIL_BACKEND
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # For production
 if not DEBUG:
     EMAIL_HOST = Config.EMAIL_HOST
     EMAIL_PORT = Config.EMAIL_PORT
