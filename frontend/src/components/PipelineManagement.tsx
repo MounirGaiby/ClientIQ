@@ -7,15 +7,12 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-  DragOverEvent,
+  useDroppable,
 } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -25,12 +22,9 @@ import {
   Calendar,
   User,
   Building,
-  Edit,
-  Trash2,
-  Eye,
-  Phone,
+  MoreHorizontal,
   Mail,
-  MoreHorizontal
+  Phone
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import OpportunityModal from './OpportunityModal';
@@ -124,15 +118,36 @@ function SortableOpportunity({ opportunity, onEdit }: { opportunity: Opportunity
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent triggering when clicking on drag handles or action buttons
+    if ((e.target as HTMLElement).closest('.drag-handle') || 
+        (e.target as HTMLElement).closest('.action-button')) {
+      return;
+    }
+    onEdit(opportunity);
+  };
+
+  const handleMoreClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event
+    onEdit(opportunity); // Open edit popup
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
       className="bg-white/5 rounded-lg p-3 border border-gray-600 hover:border-orange-500/50 transition-all cursor-pointer"
-      onClick={() => onEdit(opportunity)}
+      onClick={handleCardClick}
     >
+      {/* Drag handle - separate from the main content */}
+      <div
+        className="drag-handle cursor-grab active:cursor-grabbing mb-2"
+        {...attributes}
+        {...listeners}
+      >
+        <div className="w-full h-1 bg-gray-600 rounded opacity-50 hover:opacity-100 transition-opacity"></div>
+      </div>
+
       <div className="space-y-2">
         <div className="flex items-start justify-between">
           <h4 className="font-medium text-white text-sm line-clamp-2">
@@ -142,7 +157,11 @@ function SortableOpportunity({ opportunity, onEdit }: { opportunity: Opportunity
             <div
               className={`w-2 h-2 rounded-full ${getPriorityColor(opportunity.priority)}`}
             ></div>
-            <button className="text-gray-400 hover:text-white p-1">
+            <button 
+              className="action-button text-gray-400 hover:text-white p-1 rounded hover:bg-white/10 transition-colors"
+              onClick={handleMoreClick}
+              title="Edit opportunity"
+            >
               <MoreHorizontal className="h-3 w-3" />
             </button>
           </div>
@@ -168,9 +187,7 @@ function SortableOpportunity({ opportunity, onEdit }: { opportunity: Opportunity
           )}
           <div className="flex items-center">
             <Calendar className="h-3 w-3 mr-1" />
-            <span>
-              {new Date(opportunity.expected_close_date).toLocaleDateString()}
-            </span>
+            <span>{new Date(opportunity.expected_close_date).toLocaleDateString()}</span>
           </div>
         </div>
 
@@ -204,7 +221,7 @@ function SortableOpportunity({ opportunity, onEdit }: { opportunity: Opportunity
   );
 }
 
-// Droppable Stage Column Component
+// Droppable Stage Column Component - FIXED!
 function DroppableStage({ 
   stageData, 
   onEdit 
@@ -212,6 +229,11 @@ function DroppableStage({
   stageData: PipelineData; 
   onEdit: (opp: Opportunity) => void;
 }) {
+  // THIS IS THE KEY FIX - Add useDroppable hook
+  const { setNodeRef, isOver } = useDroppable({
+    id: stageData.stage.id, // Use stage ID as droppable ID
+  });
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -222,7 +244,14 @@ function DroppableStage({
   };
 
   return (
-    <div className="min-w-80 bg-gradient-to-b from-slate-800/50 to-slate-900/50 backdrop-blur-xl border border-orange-500/20 rounded-xl shadow-2xl">
+    <div 
+      ref={setNodeRef}
+      className={`min-w-80 bg-gradient-to-b from-slate-800/50 to-slate-900/50 backdrop-blur-xl border rounded-xl shadow-2xl transition-all ${
+        isOver 
+          ? 'border-orange-500 bg-orange-500/10' 
+          : 'border-orange-500/20'
+      }`}
+    >
       {/* Stage Header */}
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between mb-2">
@@ -261,9 +290,15 @@ function DroppableStage({
 
         {/* Empty State */}
         {stageData.opportunities.length === 0 && (
-          <div className="text-center py-8 text-gray-400">
-            <div className="text-4xl mb-2">📋</div>
-            <p className="text-sm">No opportunities in this stage</p>
+          <div className={`text-center py-8 transition-all ${
+            isOver ? 'text-orange-300' : 'text-gray-400'
+          }`}>
+            <div className="text-4xl mb-2">
+              {isOver ? '⬇️' : '📋'}
+            </div>
+            <p className="text-sm">
+              {isOver ? 'Drop opportunity here' : 'No opportunities in this stage'}
+            </p>
           </div>
         )}
       </div>
@@ -280,7 +315,11 @@ const PipelineManagement: React.FC = () => {
   const { user } = useAuth();
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px of movement before drag starts
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -305,10 +344,15 @@ const PipelineManagement: React.FC = () => {
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (!over) return;
+    if (!over) {
+      console.log('No drop target');
+      return;
+    }
 
     const opportunityId = Number(active.id);
     const newStageId = Number(over.id);
+
+    console.log('Drag end:', { opportunityId, newStageId });
 
     // Find the opportunity and its current stage
     let sourceStage: PipelineData | undefined;
@@ -323,13 +367,25 @@ const PipelineManagement: React.FC = () => {
       }
     }
 
-    if (!opportunity || !sourceStage) return;
-    if (opportunity.stage.id === newStageId) return;
+    if (!opportunity || !sourceStage) {
+      console.log('Opportunity or source stage not found');
+      return;
+    }
+
+    if (opportunity.stage.id === newStageId) {
+      console.log('Same stage, no action needed');
+      return;
+    }
 
     const targetStage = pipelineData.find(stage => stage.stage.id === newStageId);
-    if (!targetStage) return;
+    if (!targetStage) {
+      console.log('Target stage not found');
+      return;
+    }
 
     try {
+      console.log(`Moving opportunity ${opportunityId} from ${sourceStage.stage.name} to ${targetStage.stage.name}`);
+
       // Optimistic update
       const newPipelineData = [...pipelineData];
       const sourceIndex = newPipelineData.findIndex(s => s.stage.id === sourceStage.stage.id);
@@ -340,17 +396,29 @@ const PipelineManagement: React.FC = () => {
         opp => opp.id !== opportunityId
       );
 
-      // Add to target
+      // Add to target with updated stage
       const updatedOpportunity = { ...opportunity, stage: targetStage.stage };
       newPipelineData[targetIndex].opportunities.push(updatedOpportunity);
+
+      // Update summaries
+      newPipelineData[sourceIndex].summary.count--;
+      newPipelineData[sourceIndex].summary.total_value -= opportunity.value;
+
+      newPipelineData[targetIndex].summary.count++;
+      newPipelineData[targetIndex].summary.total_value += opportunity.value;
 
       setPipelineData(newPipelineData);
 
       // API call to update stage
-      await pipelineApi.changeOpportunityStage(opportunityId, newStageId);
+      await pipelineApi.changeOpportunityStage(
+        opportunityId, 
+        newStageId,
+        `Moved from ${sourceStage.stage.name} to ${targetStage.stage.name} via drag & drop`
+      );
 
-      // Refresh data to get accurate totals
+      // Refresh data to get accurate server state
       await fetchPipelineData();
+
     } catch (error) {
       console.error('Error moving opportunity:', error);
       // Revert optimistic update
@@ -437,7 +505,7 @@ const PipelineManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Pipeline Board */}
+      {/* Pipeline Board - FIXED STRUCTURE */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -445,16 +513,11 @@ const PipelineManagement: React.FC = () => {
       >
         <div className="flex space-x-4 overflow-x-auto pb-4">
           {pipelineData.map((stageData) => (
-            <SortableContext
+            <DroppableStage 
               key={stageData.stage.id}
-              items={[stageData.stage.id]}
-              strategy={verticalListSortingStrategy}
-            >
-              <DroppableStage 
-                stageData={stageData} 
-                onEdit={handleEditOpportunity}
-              />
-            </SortableContext>
+              stageData={stageData} 
+              onEdit={handleEditOpportunity}
+            />
           ))}
         </div>
       </DndContext>

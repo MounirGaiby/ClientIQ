@@ -257,6 +257,7 @@ class OpportunityCreateUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Update opportunity with history tracking."""
+        tenant_user = self.get_tenant_user(self.context['request'])
         # Track changes for history
         old_stage = instance.stage
         old_value = instance.value
@@ -280,7 +281,7 @@ class OpportunityCreateUpdateSerializer(serializers.ModelSerializer):
             validated_data['owner'] = CustomUser.objects.get(id=owner_id)
         
         # Update the instance
-        validated_data['updated_by'] = self.context['request'].user
+        validated_data['updated_by'] = tenant_user
         for key, value in validated_data.items():
             setattr(instance, key, value)
         instance.save()

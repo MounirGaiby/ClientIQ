@@ -152,13 +152,9 @@ class OpportunityViewSet(viewsets.ModelViewSet):
         """Get opportunities with related data and computed fields."""
         queryset = Opportunity.objects.select_related(
             'contact', 'company', 'stage', 'owner', 'created_by'
-        ).annotate(
-            weighted_value=Case(
-                When(probability__gt=0, then=F('value') * F('probability') / 100),
-                default=0,
-                output_field=DecimalField(max_digits=12, decimal_places=2)
-            )
         )
+        # REMOVED the .annotate() that was causing the conflict
+        # The weighted_value is already provided by the model's @property
         
         # Filter by query parameters
         stage_id = self.request.query_params.get('stage_id')
@@ -219,7 +215,7 @@ class OpportunityViewSet(viewsets.ModelViewSet):
             
             try:
                 new_stage = SalesStage.objects.get(id=stage_id, is_active=True)
-                opportunity.move_to_stage(new_stage, request.user, notes)
+                opportunity.move_to_stage(new_stage, None, notes)
                 
                 # Return updated opportunity
                 response_serializer = OpportunitySerializer(opportunity)
@@ -234,7 +230,7 @@ class OpportunityViewSet(viewsets.ModelViewSet):
                 )
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=True, methods=['get'])
     def history(self, request, pk=None):
         """
@@ -247,7 +243,7 @@ class OpportunityViewSet(viewsets.ModelViewSet):
         
         serializer = OpportunityHistorySerializer(history, many=True)
         return Response(serializer.data)
-    
+
     @action(detail=False, methods=['get'])
     def pipeline(self, request):
         """
@@ -262,12 +258,8 @@ class OpportunityViewSet(viewsets.ModelViewSet):
                 Sum('opportunities__value'),
                 Decimal('0.00'),
                 output_field=DecimalField(max_digits=12, decimal_places=2)
-            ),
-            weighted_value=Coalesce(
-                Sum(F('opportunities__value') * F('opportunities__probability') / 100),
-                Decimal('0.00'),
-                output_field=DecimalField(max_digits=12, decimal_places=2)
             )
+            # REMOVED weighted_value annotation - will be calculated by the model property
         ).order_by('order')
         
         pipeline_data = []
@@ -275,21 +267,31 @@ class OpportunityViewSet(viewsets.ModelViewSet):
             opportunities = stage.opportunities.select_related('contact', 'company', 'owner')
             opportunity_serializer = OpportunitySerializer(opportunities, many=True)
             
+            # Calculate weighted_value manually from the opportunities
+            stage_weighted_value = sum(
+                opp.weighted_value for opp in opportunities
+            ) if opportunities else Decimal('0.00')
+            
             pipeline_data.append({
                 'stage': SalesStageSerializer(stage).data,
                 'opportunities': opportunity_serializer.data,
                 'summary': {
                     'count': stage.opportunities_count,
                     'total_value': stage.total_value,
-                    'weighted_value': stage.weighted_value
+                    'weighted_value': stage_weighted_value
                 }
             })
+        
+        # Calculate totals
+        total_weighted_value = sum(
+            stage_data['summary']['weighted_value'] for stage_data in pipeline_data
+        )
         
         return Response({
             'pipeline': pipeline_data,
             'total_opportunities': sum(stage.opportunities_count for stage in stages),
             'total_pipeline_value': sum(stage.total_value for stage in stages),
-            'total_weighted_value': sum(stage.weighted_value for stage in stages)
+            'total_weighted_value': total_weighted_value
         })
     
     @action(detail=False, methods=['get'])
