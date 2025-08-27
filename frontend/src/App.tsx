@@ -56,6 +56,14 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                   <Route
+                    path="/activities"
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard activeTab="activities" />
+                      </ProtectedRoute>
+                    }
+                  />
                 </>
               ) : (
                 // Main domain routes (localhost)

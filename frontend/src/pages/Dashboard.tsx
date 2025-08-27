@@ -11,13 +11,15 @@ import {
   Plus,
   Search,
   Bell,
-  Home
+  Home,
+  Calendar
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
 import UserManagement from '../components/UserManagement';
 import ContactManagement from '../components/ContactManagement';
 import PipelineManagement from '../components/PipelineManagement';
+import Activities from '../pages/Activities';
 
 interface DashboardProps {
   activeTab?: string;
@@ -46,6 +48,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
       if (path === '/users') return 'users';
       if (path === '/contacts') return 'contacts';
       if (path === '/pipeline') return 'pipeline';
+      if (path === '/activities') return 'activities';
       if (path === '/analytics') return 'analytics';
       if (path === '/settings') return 'settings';
       if (path === '/dashboard') return 'overview';
@@ -63,6 +66,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
     { name: 'Overview', id: 'overview', icon: Home, current: currentTab === 'overview' },
     { name: 'Pipeline', id: 'pipeline', icon: BarChart3, current: currentTab === 'pipeline' },
     { name: 'Contacts', id: 'contacts', icon: ContactIcon, current: currentTab === 'contacts' },
+    { name: 'Activities', id: 'activities', icon: Calendar, current: currentTab === 'activities' },
     { name: 'Users', id: 'users', icon: Users, current: currentTab === 'users' },
     { name: 'Analytics', id: 'analytics', icon: BarChart3, current: currentTab === 'analytics' },
     { name: 'Settings', id: 'settings', icon: SettingsIcon, current: currentTab === 'settings' },
@@ -123,6 +127,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
                       'pipeline': '/pipeline',
                       'users': '/users',
                       'contacts': '/contacts',
+                      'activities': '/activities',
                       'analytics': '/analytics',
                       'settings': '/settings'
                     };
@@ -210,6 +215,7 @@ const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'overview' }) => {
             {currentTab === 'overview' && <Overview />}
             {currentTab === 'contacts' && <ContactManagement />}
             {currentTab === 'pipeline' && <PipelineManagement />}
+            {currentTab === 'activities' && <Activities />}
             {currentTab === 'users' && <UserManagement />}
             {currentTab === 'analytics' && <Analytics />}
             {currentTab === 'settings' && <Settings />}
