@@ -23,9 +23,10 @@ import {
   Bell,
   BellOff,
 } from 'lucide-react';
-import { activitiesApi, Activity, Task, ActivityType } from '../api/activities';
+import { activitiesApi, Activity, Task, ActivityType, TaskListItem } from '../api/activities';
 import { contactsApi } from '../api/contacts';
 import { pipelineApi } from '../api/pipeline';
+import { getUsers } from '../api/users';
 import { useAuth } from '../contexts/AuthContext';
 import ActivityModal from '../components/ActivityModal';
 import TaskModal from '../components/TaskModal';
@@ -59,7 +60,7 @@ interface Opportunity {
 const Activities: React.FC = () => {
   const { user } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<TaskListItem[]>([]);
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -103,14 +104,16 @@ const Activities: React.FC = () => {
         activityTypesRes,
         contactsRes,
         companiesRes,
-        opportunitiesRes
+        opportunitiesRes,
+        usersData
       ] = await Promise.all([
         activitiesApi.getActivities(),
         activitiesApi.getTasks(),
         activitiesApi.getActivityTypes(),
         contactsApi.getContacts({ limit: 1000 }),
         contactsApi.getCompanies({ limit: 1000 }),
-        pipelineApi.getOpportunities({ limit: 1000 })
+        pipelineApi.getOpportunities({ limit: 1000 }),
+        getUsers()
       ]);
 
       setActivities(activitiesRes.results);
@@ -119,6 +122,7 @@ const Activities: React.FC = () => {
       setContacts(contactsRes.results);
       setCompanies(companiesRes.results);
       setOpportunities(opportunitiesRes.results);
+      setUsers(usersData.results); 
 
     } catch (err) {
       setError('Failed to load activities data');
@@ -151,11 +155,17 @@ const Activities: React.FC = () => {
     setShowTaskModal(true);
   };
 
-  const handleEditTask = (task: Task) => {
-    setSelectedTask(task);
-    setIsCreating(false);
-    setShowTaskModal(true);
+  const handleEditTask = async (taskListItem: TaskListItem) => {
+    try {
+      const fullTask = await activitiesApi.getTask(taskListItem.id);
+      setSelectedTask(fullTask);
+      setIsCreating(false);
+      setShowTaskModal(true);
+    } catch (error) {
+      console.error("Error fetching task details:", error);
+    }
   };
+
 
   const handleCompleteActivity = async (activity: Activity) => {
     try {
@@ -166,7 +176,7 @@ const Activities: React.FC = () => {
     }
   };
 
-  const handleCompleteTask = async (task: Task) => {
+  const handleCompleteTask = async (task: TaskListItem) => {
     try {
       await activitiesApi.completeTask(task.id, {});
       loadData(); // Reload to get updated data
@@ -610,9 +620,9 @@ const ActivitiesTab: React.FC<{
 
 // Tasks Tab Component
 const TasksTab: React.FC<{
-  tasks: Task[];
-  onEdit: (task: Task) => void;
-  onComplete: (task: Task) => void;
+  tasks: TaskListItem[];
+  onEdit: (task: TaskListItem) => void;
+  onComplete: (task: TaskListItem) => void;
   getPriorityColor: (priority: string) => string;
   getStatusColor: (status: string) => string;
 }> = ({ tasks, onEdit, onComplete, getPriorityColor, getStatusColor }) => {
@@ -634,7 +644,7 @@ const TasksTab: React.FC<{
             <div>
               <p className="text-green-300 text-sm">Completed</p>
               <p className="text-white text-2xl font-bold">
-                {tasks.filter(t => t.status === 'completed').length}
+                {tasks.filter((t) => t.status === "completed").length}
               </p>
             </div>
             <Check className="h-8 w-8 text-green-400" />
@@ -645,7 +655,7 @@ const TasksTab: React.FC<{
             <div>
               <p className="text-yellow-300 text-sm">In Progress</p>
               <p className="text-white text-2xl font-bold">
-                {tasks.filter(t => t.status === 'in_progress').length}
+                {tasks.filter((t) => t.status === "in_progress").length}
               </p>
             </div>
             <Play className="h-8 w-8 text-yellow-400" />
@@ -656,7 +666,7 @@ const TasksTab: React.FC<{
             <div>
               <p className="text-red-300 text-sm">Overdue</p>
               <p className="text-white text-2xl font-bold">
-                {tasks.filter(t => t.is_overdue).length}
+                {tasks.filter((t) => t.is_overdue).length}
               </p>
             </div>
             <AlertCircle className="h-8 w-8 text-red-400" />
@@ -670,21 +680,42 @@ const TasksTab: React.FC<{
           <table className="w-full">
             <thead className="bg-slate-800/80">
               <tr>
-                <th className="text-left p-4 text-gray-300 font-medium">Task</th>
-                <th className="text-left p-4 text-gray-300 font-medium">Status</th>
-                <th className="text-left p-4 text-gray-300 font-medium">Priority</th>
-                <th className="text-left p-4 text-gray-300 font-medium">Due Date</th>
-                <th className="text-left p-4 text-gray-300 font-medium">Assigned To</th>
-                <th className="text-left p-4 text-gray-300 font-medium">Related</th>
-                <th className="text-right p-4 text-gray-300 font-medium">Actions</th>
+                <th className="text-left p-4 text-gray-300 font-medium">
+                  Task
+                </th>
+                <th className="text-left p-4 text-gray-300 font-medium">
+                  Status
+                </th>
+                <th className="text-left p-4 text-gray-300 font-medium">
+                  Priority
+                </th>
+                <th className="text-left p-4 text-gray-300 font-medium">
+                  Due Date
+                </th>
+                <th className="text-left p-4 text-gray-300 font-medium">
+                  Assigned To
+                </th>
+                <th className="text-left p-4 text-gray-300 font-medium">
+                  Related
+                </th>
+                <th className="text-right p-4 text-gray-300 font-medium">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {tasks.map((task) => (
-                <tr key={task.id} className="border-t border-gray-700/50 hover:bg-slate-700/30 transition-colors">
+                <tr
+                  key={task.id}
+                  className="border-t border-gray-700/50 hover:bg-slate-700/30 transition-colors"
+                >
                   <td className="p-4">
                     <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${getStatusColor(task.status)}`}>
+                      <div
+                        className={`p-2 rounded-lg ${getStatusColor(
+                          task.status
+                        )}`}
+                      >
                         <CheckSquare className="h-4 w-4" />
                       </div>
                       <div>
@@ -698,21 +729,35 @@ const TasksTab: React.FC<{
                     </div>
                   </td>
                   <td className="p-4">
-                    <span className={`px-2 py-1 rounded text-sm border ${getStatusColor(task.status)}`}>
-                      {task.status.replace('_', ' ')}
+                    <span
+                      className={`px-2 py-1 rounded text-sm border ${getStatusColor(
+                        task.status
+                      )}`}
+                    >
+                      {task.status.replace("_", " ")}
                     </span>
                   </td>
                   <td className="p-4">
-                    <span className={`px-2 py-1 rounded text-sm border ${getPriorityColor(task.priority)}`}>
+                    <span
+                      className={`px-2 py-1 rounded text-sm border ${getPriorityColor(
+                        task.priority
+                      )}`}
+                    >
                       {task.priority}
                     </span>
                   </td>
                   <td className="p-4">
                     {task.due_date ? (
-                      <div className={`text-sm ${task.is_overdue ? 'text-red-400' : 'text-white'}`}>
+                      <div
+                        className={`text-sm ${
+                          task.is_overdue ? "text-red-400" : "text-white"
+                        }`}
+                      >
                         {new Date(task.due_date).toLocaleDateString()}
                         {task.is_overdue && (
-                          <span className="block text-xs text-red-400">Overdue</span>
+                          <span className="block text-xs text-red-400">
+                            Overdue
+                          </span>
                         )}
                       </div>
                     ) : (
@@ -720,42 +765,64 @@ const TasksTab: React.FC<{
                     )}
                   </td>
                   <td className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <div className="h-8 w-8 bg-orange-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-xs font-medium">
-                          {task.assigned_to.first_name[0]}{task.assigned_to.last_name[0]}
+                    {task.assigned_to_name ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs font-medium">
+                            {task.assigned_to_name
+                              .split(" ")
+                              .map((name) => name[0])
+                              .join("")
+                              .slice(0, 2)}
+                          </span>
+                        </div>
+                        <span className="text-white text-sm">
+                          {task.assigned_to_name}
                         </span>
                       </div>
-                      <span className="text-white text-sm">
-                        {task.assigned_to.first_name} {task.assigned_to.last_name}
-                      </span>
-                    </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <div className="h-8 w-8 bg-gray-500 rounded-full flex items-center justify-center">
+                          <User className="h-4 w-4 text-gray-300" />
+                        </div>
+                        <span className="text-gray-400 text-sm">
+                          Unassigned
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className="p-4">
                     <div className="space-y-1">
-                      {task.contact && (
+                      {task.contact_name && (
                         <div className="flex items-center space-x-1 text-sm text-gray-300">
                           <User className="h-3 w-3" />
-                          <span>{task.contact.first_name} {task.contact.last_name}</span>
+                          <span>{task.contact_name}</span>
                         </div>
                       )}
-                      {task.company && (
+                      {task.company_name && (
                         <div className="flex items-center space-x-1 text-sm text-gray-300">
                           <Building className="h-3 w-3" />
-                          <span>{task.company.name}</span>
+                          <span>{task.company_name}</span>
                         </div>
                       )}
-                      {task.opportunity && (
+                      {task.opportunity_name && (
                         <div className="flex items-center space-x-1 text-sm text-gray-300">
                           <Target className="h-3 w-3" />
-                          <span>{task.opportunity.name}</span>
+                          <span>{task.opportunity_name}</span>
                         </div>
                       )}
+                      {!task.contact_name &&
+                        !task.company_name &&
+                        !task.opportunity_name && (
+                          <div className="text-sm text-gray-500">
+                            <span>No relations</span>
+                          </div>
+                        )}
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center justify-end space-x-2">
-                      {task.status !== 'completed' && (
+                      {task.status !== "completed" && (
                         <button
                           onClick={() => onComplete(task)}
                           className="p-2 text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
@@ -778,12 +845,16 @@ const TasksTab: React.FC<{
             </tbody>
           </table>
         </div>
-        
+
         {tasks.length === 0 && (
           <div className="text-center py-12">
             <CheckSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-white mb-2">No Tasks Found</h3>
-            <p className="text-gray-400">Create your first task to get started.</p>
+            <h3 className="text-xl font-medium text-white mb-2">
+              No Tasks Found
+            </h3>
+            <p className="text-gray-400">
+              Create your first task to get started.
+            </p>
           </div>
         )}
       </div>

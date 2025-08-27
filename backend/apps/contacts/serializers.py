@@ -32,13 +32,13 @@ class CompanySerializer(serializers.ModelSerializer):
     def get_created_by_name(self, obj):
         """Get the name of the user who created this company"""
         if obj.created_by:
-            return obj.created_by.get_full_name()
+            return obj.created_by.full_name
         return None
     
     def get_updated_by_name(self, obj):
         """Get the name of the user who last updated this company"""
         if obj.updated_by:
-            return obj.updated_by.get_full_name()
+            return obj.updated_by.full_name
         return None
 
 
@@ -129,19 +129,19 @@ class ContactDetailSerializer(serializers.ModelSerializer):
     def get_created_by_name(self, obj):
         """Get the name of the user who created this contact"""
         if obj.created_by:
-            return obj.created_by.get_full_name()
+            return obj.created_by.full_name
         return None
     
     def get_updated_by_name(self, obj):
         """Get the name of the user who last updated this contact"""
         if obj.updated_by:
-            return obj.updated_by.get_full_name()
+            return obj.updated_by.full_name
         return None
     
     def get_owner_name(self, obj):
         """Get the name of the contact owner"""
         if obj.owner:
-            return obj.owner.get_full_name()
+            return obj.owner.full_name
         return None
 
 

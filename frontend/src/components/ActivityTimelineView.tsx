@@ -21,7 +21,7 @@ import {
   AlertCircle,
   MessageSquare
 } from 'lucide-react';
-import { Activity, Task, activitiesApi } from '../api/activities';
+import { Activity, Task, TaskListItem, activitiesApi } from '../api/activities';
 
 interface TimelineItem {
   id: string;
@@ -44,7 +44,7 @@ interface TimelineItem {
 
 interface ActivityTimelineProps {
   activities: Activity[];
-  tasks: Task[];
+  tasks: TaskListItem[];
 }
 
 const ActivityTimelineView: React.FC<ActivityTimelineProps> = ({
@@ -110,11 +110,11 @@ const ActivityTimelineView: React.FC<ActivityTimelineProps> = ({
         timestamp: task.due_date ? new Date(task.due_date) : new Date(task.created_at),
         status: task.status,
         priority: task.priority,
-        user: `${task.assigned_to.first_name} ${task.assigned_to.last_name}`,
+        user: task.assigned_to_name || 'Unassigned',
         related: {
-          contact: task.contact ? `${task.contact.first_name} ${task.contact.last_name}` : undefined,
-          company: task.company?.name,
-          opportunity: task.opportunity?.name,
+          contact: task.contact_name,        // Changed
+          company: task.company_name,        // Changed
+          opportunity: task.opportunity_name, // Changed
         },
         data: task,
         icon: CheckSquare,
@@ -132,11 +132,11 @@ const ActivityTimelineView: React.FC<ActivityTimelineProps> = ({
         timestamp: new Date(interaction.interaction_date),
         status: 'completed',
         priority: 'medium',
-        user: `${interaction.logged_by.first_name} ${interaction.logged_by.last_name}`,
+        user: `${interaction.logged_by?.first_name} ${interaction.logged_by?.last_name}`,
         related: {
-          contact: interaction.contact ? `${interaction.contact.first_name} ${interaction.contact.last_name}` : undefined,
-          company: interaction.company?.name,
-          opportunity: interaction.opportunity?.name,
+          contact: interaction.contact_name,
+          company: interaction.company_name,
+          opportunity: interaction.opportunity_name,
         },
         data: interaction,
         icon: getInteractionIcon(interaction.interaction_type),

@@ -154,11 +154,17 @@ class ActivityCompletionSerializer(serializers.Serializer):
 class TaskCreateUpdateSerializer(serializers.ModelSerializer):
     """Serializer for creating and updating tasks."""
     
+    # Accept ID fields for foreign keys
+    assigned_to_id = serializers.IntegerField(write_only=True)
+    contact_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    company_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    opportunity_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    
     class Meta:
         model = Task
         fields = [
             'title', 'description', 'priority', 'due_date',
-            'assigned_to', 'contact', 'company', 'opportunity'
+            'assigned_to_id', 'contact_id', 'company_id', 'opportunity_id'
         ]
     
     def validate_due_date(self, value):
@@ -168,6 +174,105 @@ class TaskCreateUpdateSerializer(serializers.ModelSerializer):
                 "Due date cannot be in the past."
             )
         return value
+    
+    def validate_assigned_to_id(self, value):
+        """Validate assigned_to user exists."""
+        try:
+            from apps.users.models import CustomUser
+            user = CustomUser.objects.get(id=value)
+            return value
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError("Assigned user does not exist.")
+    
+    def validate_contact_id(self, value):
+        """Validate contact exists if provided."""
+        if value:
+            try:
+                from apps.contacts.models import Contact
+                Contact.objects.get(id=value)
+            except Contact.DoesNotExist:
+                raise serializers.ValidationError("Contact does not exist.")
+        return value
+    
+    def validate_company_id(self, value):
+        """Validate company exists if provided."""
+        if value:
+            try:
+                from apps.contacts.models import Company
+                Company.objects.get(id=value)
+            except Company.DoesNotExist:
+                raise serializers.ValidationError("Company does not exist.")
+        return value
+    
+    def validate_opportunity_id(self, value):
+        """Validate opportunity exists if provided."""
+        if value:
+            try:
+                from apps.opportunities.models import Opportunity
+                Opportunity.objects.get(id=value)
+            except Opportunity.DoesNotExist:
+                raise serializers.ValidationError("Opportunity does not exist.")
+        return value
+    
+    def create(self, validated_data):
+        """Create task with proper foreign key assignments."""
+        # Convert _id fields to actual objects
+        assigned_to_id = validated_data.pop('assigned_to_id')
+        contact_id = validated_data.pop('contact_id', None)
+        company_id = validated_data.pop('company_id', None)
+        opportunity_id = validated_data.pop('opportunity_id', None)
+        
+        # Get the actual objects
+        from apps.users.models import CustomUser
+        validated_data['assigned_to'] = CustomUser.objects.get(id=assigned_to_id)
+        
+        if contact_id:
+            from apps.contacts.models import Contact
+            validated_data['contact'] = Contact.objects.get(id=contact_id)
+        
+        if company_id:
+            from apps.contacts.models import Company
+            validated_data['company'] = Company.objects.get(id=company_id)
+        
+        if opportunity_id:
+            from apps.opportunities.models import Opportunity
+            validated_data['opportunity'] = Opportunity.objects.get(id=opportunity_id)
+        
+        return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        """Update task with proper foreign key assignments."""
+        # Handle _id fields similar to create
+        if 'assigned_to_id' in validated_data:
+            assigned_to_id = validated_data.pop('assigned_to_id')
+            from apps.users.models import CustomUser
+            validated_data['assigned_to'] = CustomUser.objects.get(id=assigned_to_id)
+        
+        if 'contact_id' in validated_data:
+            contact_id = validated_data.pop('contact_id')
+            if contact_id:
+                from apps.contacts.models import Contact
+                validated_data['contact'] = Contact.objects.get(id=contact_id)
+            else:
+                validated_data['contact'] = None
+        
+        if 'company_id' in validated_data:
+            company_id = validated_data.pop('company_id')
+            if company_id:
+                from apps.contacts.models import Company
+                validated_data['company'] = Company.objects.get(id=company_id)
+            else:
+                validated_data['company'] = None
+        
+        if 'opportunity_id' in validated_data:
+            opportunity_id = validated_data.pop('opportunity_id')
+            if opportunity_id:
+                from apps.opportunities.models import Opportunity
+                validated_data['opportunity'] = Opportunity.objects.get(id=opportunity_id)
+            else:
+                validated_data['opportunity'] = None
+        
+        return super().update(instance, validated_data)
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -196,13 +301,14 @@ class TaskSerializer(serializers.ModelSerializer):
         ]
 
 
+# Fix 2: Update TaskListSerializer to use full_name property
 class TaskListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for task lists."""
     
     contact_name = serializers.SerializerMethodField()
     company_name = serializers.CharField(source='company.name', read_only=True)
     opportunity_name = serializers.CharField(source='opportunity.name', read_only=True)
-    assigned_to_name = serializers.CharField(source='assigned_to.get_full_name', read_only=True)
+    assigned_to_name = serializers.CharField(source='assigned_to.full_name', read_only=True)  # Fixed here
     
     # Computed fields
     is_overdue = serializers.ReadOnlyField()

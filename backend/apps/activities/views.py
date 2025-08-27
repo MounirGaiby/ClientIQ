@@ -410,9 +410,16 @@ class TaskViewSet(viewsets.ModelViewSet):
             return TaskCreateUpdateSerializer
         return TaskSerializer
     
+    def get_tenant_user(self, request):
+        try:
+            return CustomUser.objects.get(email=request.user.email)
+        except CustomUser.DoesNotExist:
+            return None
+    
     def perform_create(self, serializer):
         """Set created_by when creating a task."""
-        serializer.save(created_by=self.request.user)
+        tenant_user = self.get_tenant_user(self.request)
+        serializer.save(created_by=tenant_user)
     
     @action(detail=True, methods=['post'])
     def complete(self, request, pk=None):

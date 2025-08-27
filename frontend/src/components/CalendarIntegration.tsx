@@ -19,11 +19,11 @@ import {
   MoreHorizontal,
   X
 } from 'lucide-react';
-import { Activity, Task } from '../api/activities';
+import { Activity, Task, TaskListItem } from '../api/activities';
 
 interface CalendarIntegrationProps {
   activities: Activity[];
-  tasks: Task[];
+  tasks: TaskListItem[];
 }
 
 interface CalendarEvent {
@@ -39,7 +39,7 @@ interface CalendarEvent {
     company?: string;
     opportunity?: string;
   };
-  data: Activity | Task;
+  data: Activity | TaskListItem;
 }
 
 const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({
@@ -95,9 +95,9 @@ const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({
           priority: task.priority,
           status: task.status,
           related: {
-            contact: task.contact ? `${task.contact.first_name} ${task.contact.last_name}` : undefined,
-            company: task.company?.name,
-            opportunity: task.opportunity?.name,
+            contact: task.contact_name,        // Changed
+            company: task.company_name,        // Changed  
+            opportunity: task.opportunity_name, // Changed
           },
           data: task
         });

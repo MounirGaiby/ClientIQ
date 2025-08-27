@@ -59,6 +59,21 @@ export interface Activity {
   updated_at: string;
 }
 
+export interface TaskListItem {
+  id: number;
+  title: string;
+  description?: string;
+  status: 'todo' | 'in_progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high';
+  due_date?: string;
+  contact_name?: string;
+  company_name?: string;
+  opportunity_name?: string;
+  assigned_to_name?: string;  // This is what your API actually returns
+  is_overdue: boolean;
+  created_at: string;
+}
+
 export interface Task {
   id: number;
   title: string;
