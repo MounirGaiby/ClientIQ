@@ -88,7 +88,7 @@ const ActivityTimelineView: React.FC<ActivityTimelineProps> = ({
         timestamp: new Date(activity.scheduled_at),
         status: activity.status,
         priority: activity.priority,
-        user: `${activity.assigned_to.first_name} ${activity.assigned_to.last_name}`,
+        user: `${activity.assigned_to?.first_name} ${activity.assigned_to?.last_name}`,
         related: {
           contact: activity.contact?.full_name,
           company: activity.company?.name,

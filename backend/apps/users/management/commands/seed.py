@@ -10,6 +10,7 @@ from apps.demo.models import DemoRequest
 from apps.platform.models import SuperUser
 from apps.users.models import CustomUser
 from apps.opportunities.models import SalesStage, Opportunity, OpportunityHistory
+from apps.activities.models import ActivityType, Activity, Task, InteractionLog
 import random
 from decimal import Decimal
 from datetime import timedelta, date
@@ -42,6 +43,10 @@ class Command(BaseCommand):
                 
                 # Step 5: Create sample business data (including opportunities)
                 self.create_sample_data()
+
+                self.create_activity_types()
+
+                self.create_activities_and_tasks()
         
         # Print credentials at the end
         self.print_credentials(superuser_credentials, tenant_admin_credentials)
@@ -455,7 +460,7 @@ class Command(BaseCommand):
         created_companies = []
         created_contacts = []
         
-        for company_data in companies_data:
+        for i, company_data in enumerate(companies_data):
             # Create company
             company = Company.objects.create(
                 name=company_data['name'],
@@ -469,42 +474,126 @@ class Command(BaseCommand):
             self.stdout.write(f'✅ Created company: {company.name}')
             
             # Create 2-3 contacts per company
-            contacts_for_company = [
-                {
-                    'first_name': 'John',
-                    'last_name': 'Doe',
-                    'email': f'john.doe@{company.name.lower().replace(" ", "").replace(".", "")}.com',
-                    'phone': '+1-555-0101',
-                    'job_title': 'CEO',
-                    'contact_type': 'client'
-                },
-                {
-                    'first_name': 'Jane',
-                    'last_name': 'Smith',
-                    'email': f'jane.smith@{company.name.lower().replace(" ", "").replace(".", "")}.com',
-                    'phone': '+1-555-0102',
-                    'job_title': 'CTO',
-                    'contact_type': 'prospect'
-                },
-                {
-                    'first_name': 'Mike',
-                    'last_name': 'Johnson',
-                    'email': f'mike.johnson@{company.name.lower().replace(" ", "").replace(".", "")}.com',
-                    'phone': '+1-555-0103',
-                    'job_title': 'Purchase Manager',
-                    'contact_type': 'lead'
-                }
+            contacts_lists = [
+                # TechStart Solutions
+                [
+                    {
+                        'first_name': 'Alex',
+                        'last_name': 'Rodriguez',
+                        'job_title': 'CEO',
+                        'contact_type': 'client'
+                    },
+                    {
+                        'first_name': 'Sarah',
+                        'last_name': 'Chen',
+                        'job_title': 'CTO',
+                        'contact_type': 'prospect'
+                    },
+                    {
+                        'first_name': 'Marcus',
+                        'last_name': 'Williams',
+                        'job_title': 'Product Manager',
+                        'contact_type': 'lead'
+                    }
+                ],
+                # Global Manufacturing Inc
+                [
+                    {
+                        'first_name': 'Jennifer',
+                        'last_name': 'Thompson',
+                        'job_title': 'Operations Director',
+                        'contact_type': 'client'
+                    },
+                    {
+                        'first_name': 'Robert',
+                        'last_name': 'Davis',
+                        'job_title': 'VP Engineering',
+                        'contact_type': 'prospect'
+                    },
+                    {
+                        'first_name': 'Lisa',
+                        'last_name': 'Anderson',
+                        'job_title': 'Procurement Manager',
+                        'contact_type': 'lead'
+                    }
+                ],
+                # HealthCare Plus
+                [
+                    {
+                        'first_name': 'David',
+                        'last_name': 'Martinez',
+                        'job_title': 'Chief Medical Officer',
+                        'contact_type': 'client'
+                    },
+                    {
+                        'first_name': 'Emily',
+                        'last_name': 'Brown',
+                        'job_title': 'IT Director',
+                        'contact_type': 'prospect'
+                    },
+                    {
+                        'first_name': 'Mike',
+                        'last_name': 'Johnson',
+                        'job_title': 'Purchase Manager',
+                        'contact_type': 'lead'
+                    }
+                ],
+                # EduTech Innovations
+                [
+                    {
+                        'first_name': 'Amanda',
+                        'last_name': 'Wilson',
+                        'job_title': 'Head of Technology',
+                        'contact_type': 'client'
+                    },
+                    {
+                        'first_name': 'James',
+                        'last_name': 'Taylor',
+                        'job_title': 'Academic Director',
+                        'contact_type': 'prospect'
+                    },
+                    {
+                        'first_name': 'Rachel',
+                        'last_name': 'Green',
+                        'job_title': 'Innovation Lead',
+                        'contact_type': 'lead'
+                    }
+                ],
+                # RetailMax Corp
+                [
+                    {
+                        'first_name': 'Christopher',
+                        'last_name': 'Lee',
+                        'job_title': 'VP Digital',
+                        'contact_type': 'client'
+                    },
+                    {
+                        'first_name': 'Michelle',
+                        'last_name': 'White',
+                        'job_title': 'Store Operations',
+                        'contact_type': 'prospect'
+                    },
+                    {
+                        'first_name': 'Kevin',
+                        'last_name': 'Garcia',
+                        'job_title': 'Technology Manager',
+                        'contact_type': 'lead'
+                    }
+                ]
             ]
             
+            # Get unique contacts for this company
+            contacts_for_company = contacts_lists[i]
+
             company_contacts = []
-            for i, contact_data in enumerate(contacts_for_company):
-                if i < 2 or random.random() > 0.5:  # Create 2-3 contacts randomly
+            for j, contact_data in enumerate(contacts_for_company):
+                if j < 2 or random.random() > 0.5:  # Create 2-3 contacts randomly
                     owner = random.choice(sales_users) if sales_users else admin_user
                     contact = Contact.objects.create(
                         first_name=contact_data['first_name'],
                         last_name=contact_data['last_name'],
-                        email=contact_data['email'],
-                        phone=contact_data.get('phone', ''),
+                        email=f"{contact_data['first_name'].lower()}.{contact_data['last_name'].lower()}@{company.name.lower().replace(' ', '').replace('.', '')}.com",
+                        phone=f'+1-555-{1000 + i*10 + j}',  # Unique phone numbers
                         job_title=contact_data.get('job_title', ''),
                         company=company,
                         contact_type=contact_data['contact_type'],
@@ -516,7 +605,7 @@ class Command(BaseCommand):
                     self.stdout.write(f'✅ Created contact: {contact.full_name}')
             
             # Create 1-2 opportunities per company
-            for i in range(random.randint(1, 2)):
+            for j in range(random.randint(1, 2)):
                 self.create_sample_opportunity(company, company_contacts, stages, sales_users, admin_user)
         
         self.stdout.write(f'📊 Created {len(created_companies)} companies and {len(created_contacts)} contacts')
@@ -617,35 +706,172 @@ class Command(BaseCommand):
         self.stdout.write('    This needs to be fixed in apps/users/models.py')
 
     def create_opportunity_progression(self, opportunity, stages, owner):
-        """Create realistic stage progression for an opportunity"""
+        """Create realistic progression history for an opportunity"""
         current_stage_index = next((i for i, stage in enumerate(stages) if stage == opportunity.stage), 0)
         
-        # Move forward 1-2 stages randomly
-        progression_steps = random.randint(1, min(2, len(stages) - current_stage_index - 3))  # Leave room before closed stages
+        # Calculate maximum possible progression steps safely
+        max_possible_steps = len(stages) - current_stage_index - 3  # Leave room before closed stages
+        
+        # Ensure we have a valid range for progression steps
+        if max_possible_steps <= 0:
+            # If we're already near the end stages, don't create progression
+            return
+        
+        # Safe range calculation
+        max_steps = min(2, max_possible_steps)
+        if max_steps <= 0:
+            return
+            
+        progression_steps = random.randint(1, max_steps)
+        
+        # Start from Lead stage (index 0) and progress forward
+        current_date = timezone.now() - timedelta(days=random.randint(30, 90))
         
         for step in range(progression_steps):
-            new_stage_index = current_stage_index + step + 1
-            if new_stage_index < len(stages) - 2:  # Don't auto-close deals
-                new_stage = stages[new_stage_index]
-                old_stage = opportunity.stage
-                old_probability = opportunity.probability
-                
-                # Update opportunity
-                opportunity.stage = new_stage
-                opportunity.probability = new_stage.probability
-                opportunity.save()
-                
-                # Create history
-                OpportunityHistory.objects.create(
-                    opportunity=opportunity,
-                    action='stage_changed',
-                    old_stage=old_stage,
-                    new_stage=new_stage,
-                    old_probability=old_probability,
-                    new_probability=new_stage.probability,
-                    changed_by=owner,
-                    notes=f'Moved from {old_stage.name} to {new_stage.name}'
-                )
+            stage_index = min(step, len(stages) - 3)  # Don't go to closed stages
+            stage = stages[stage_index]
+            
+            # Create history entry
+            OpportunityHistory.objects.create(
+                opportunity=opportunity,
+                stage=stage,
+                changed_by=owner,
+                changed_at=current_date,
+                notes=f"Opportunity progressed to {stage.name} stage"
+            )
+            
+            # Move to next date
+            current_date += timedelta(days=random.randint(7, 21))
+        
+        self.stdout.write(f'📊 Created {progression_steps} progression steps for {opportunity.name}')
+
+    def create_activity_types(self):
+        """Create default activity types"""
+        self.stdout.write('🎯 Creating activity types...')
+        
+        activity_types_data = [
+            {
+                'name': 'Call',
+                'description': 'Phone call with contact',
+                'icon': 'phone',
+                'color': '#10b981',
+                'requires_duration': True,
+                'requires_outcome': True
+            },
+            {
+                'name': 'Email',
+                'description': 'Email communication',
+                'icon': 'mail',
+                'color': '#3b82f6',
+                'requires_duration': False,
+                'requires_outcome': False
+            },
+            {
+                'name': 'Meeting',
+                'description': 'In-person or virtual meeting',
+                'icon': 'users',
+                'color': '#8b5cf6',
+                'requires_duration': True,
+                'requires_outcome': True
+            },
+            {
+                'name': 'Demo',
+                'description': 'Product demonstration',
+                'icon': 'monitor',
+                'color': '#f59e0b',
+                'requires_duration': True,
+                'requires_outcome': True
+            },
+            {
+                'name': 'Follow-up',
+                'description': 'Follow-up activity',
+                'icon': 'clock',
+                'color': '#ef4444',
+                'requires_duration': False,
+                'requires_outcome': True
+            }
+        ]
+        
+        created_types = []
+        for type_data in activity_types_data:
+            activity_type = ActivityType.objects.create(**type_data)
+            created_types.append(activity_type)
+            self.stdout.write(f'✅ Created activity type: {activity_type.name}')
+        
+        return created_types
+
+    def create_activities_and_tasks(self):
+        """Create sample activities and tasks"""
+        self.stdout.write('📅 Creating sample activities and tasks...')
+        
+        # Get required data
+        activity_types = list(ActivityType.objects.all())
+        contacts = list(Contact.objects.all())
+        companies = list(Company.objects.all())
+        opportunities = list(Opportunity.objects.all())
+        users = list(TenantUser.objects.all())
+        
+        if not activity_types or not contacts:
+            self.stdout.write('⏭️ No activity types or contacts found, skipping activities creation')
+            return
+        
+        # Create sample activities
+        for i in range(10):
+            contact = random.choice(contacts)
+            activity_type = random.choice(activity_types)
+            assigned_user = random.choice(users)
+            
+            # Random scheduled time (next 30 days)
+            days_ahead = random.randint(1, 30)
+            hours = random.randint(9, 17)  # Business hours
+            scheduled_at = timezone.now() + timedelta(days=days_ahead, hours=hours-timezone.now().hour)
+            
+            activity = Activity.objects.create(
+                title=f"{activity_type.name} with {contact.first_name} {contact.last_name}",
+                description=f"Scheduled {activity_type.name.lower()} to discuss business opportunities",
+                activity_type=activity_type,
+                scheduled_at=scheduled_at,
+                duration_minutes=random.choice([30, 45, 60]) if activity_type.requires_duration else None,
+                priority=random.choice(['low', 'medium', 'high']),
+                status=random.choice(['scheduled', 'completed']) if i < 5 else 'scheduled',
+                contact=contact,
+                company=contact.company,
+                opportunity=random.choice(opportunities) if opportunities else None,
+                assigned_to=assigned_user,
+                created_by=users[0],  # Admin user
+            )
+            
+            self.stdout.write(f'✅ Created activity: {activity.title}')
+        
+        # Create sample tasks
+        for i in range(8):
+            contact = random.choice(contacts)
+            assigned_user = random.choice(users)
+            
+            # Random due date (next 14 days)
+            days_ahead = random.randint(1, 14)
+            due_date = timezone.now() + timedelta(days=days_ahead)
+            
+            task = Task.objects.create(
+                title=f"Follow up on {contact.company.name} proposal",
+                description=f"Review and follow up on the proposal sent to {contact.first_name} {contact.last_name}",
+                priority=random.choice(['low', 'medium', 'high', 'urgent']),
+                due_date=due_date,
+                status=random.choice(['todo', 'in_progress']) if i < 6 else 'completed',
+                assigned_to=assigned_user,
+                created_by=users[0],  # Admin user
+                contact=contact,
+                company=contact.company,
+                opportunity=random.choice(opportunities) if opportunities else None,
+            )
+            
+            # Mark some as completed
+            if task.status == 'completed':
+                task.completed_at = timezone.now() - timedelta(days=random.randint(1, 5))
+                task.completion_notes = "Task completed successfully"
+                task.save()
+            
+            self.stdout.write(f'✅ Created task: {task.title}')
 
     def print_credentials(self, superuser_creds, tenant_admin_creds):
         """Print login credentials at the end"""

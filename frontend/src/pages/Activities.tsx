@@ -504,7 +504,7 @@ const ActivitiesTab: React.FC<{
             </thead>
             <tbody>
               {activities.map((activity) => {
-                const Icon = getActivityIcon(activity.activity_type.name);
+                const Icon = getActivityIcon(activity.activity_type?.name);
                 return (
                   <tr key={activity.id} className="border-t border-gray-700/50 hover:bg-slate-700/30 transition-colors">
                     <td className="p-4">
@@ -524,7 +524,7 @@ const ActivitiesTab: React.FC<{
                     </td>
                     <td className="p-4">
                       <span className="px-2 py-1 bg-slate-600/50 text-gray-300 rounded text-sm">
-                        {activity.activity_type.name}
+                        {activity.activity_type?.name}
                       </span>
                     </td>
                     <td className="p-4">
@@ -549,11 +549,11 @@ const ActivitiesTab: React.FC<{
                       <div className="flex items-center space-x-2">
                         <div className="h-8 w-8 bg-orange-500 rounded-full flex items-center justify-center">
                           <span className="text-white text-xs font-medium">
-                            {activity.assigned_to.first_name[0]}{activity.assigned_to.last_name[0]}
+                            {activity.assigned_to?.first_name[0]}{activity.assigned_to?.last_name[0]}
                           </span>
                         </div>
                         <span className="text-white text-sm">
-                          {activity.assigned_to.first_name} {activity.assigned_to.last_name}
+                          {activity.assigned_to?.first_name} {activity.assigned_to?.last_name}
                         </span>
                       </div>
                     </td>
